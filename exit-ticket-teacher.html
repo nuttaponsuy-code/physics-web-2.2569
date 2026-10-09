@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Ticket — ห้องควบคุมครู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16241C;
+    --bg-panel:#1F3327;
+    --bg-panel-2:#233A2C;
+    --ink:#F3F1E7;
+    --ink-dim:#B9C4B7;
+    --rule:rgba(243,241,231,.14);
+    --yellow:#F2C744;
+    --sky:#74B9E7;
+    --mint:#7ED9A8;
+    --coral:#F2789F;
+    --orange:#F2914F;
+    --lilac:#C9A6E8;
+    --danger:#E4675C;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Sarabun',sans-serif;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(242,199,68,.06), transparent 55%),
+      radial-gradient(ellipse at 100% 110%, rgba(116,185,231,.06), transparent 55%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 5px),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  h1,h2,h3,.display{font-family:'Kanit',sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;border-radius:10px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:19px;transform:rotate(-4deg);flex:none;}
+  .brand h1{font-size:21px;font-weight:700;letter-spacing:.2px;}
+  .brand span{display:block;font-size:12.5px;color:var(--ink-dim);font-weight:400;margin-top:1px;}
+  .class-picker{display:flex;align-items:center;gap:10px;}
+  .class-picker label{font-size:13px;color:var(--ink-dim);}
+  select{
+    background:var(--bg-panel);color:var(--ink);border:1px solid var(--rule);
+    border-radius:10px;padding:9px 14px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;
+    cursor:pointer;
+  }
+
+  .panel{
+    background:var(--bg-panel);border:1px solid var(--rule);border-radius:var(--radius);
+    padding:26px;
+  }
+  .panel p{color:var(--ink-dim);font-size:14.5px;margin-top:8px;line-height:1.6;}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border:none;border-radius:11px;
+    font-size:15px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;
+  }
+  .btn-primary{background:var(--mint);color:#12241A;}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-secondary{background:var(--bg-panel-2);color:var(--ink);border:1.5px solid var(--rule);}
+  .btn-secondary:hover{border-color:var(--ink-dim);}
+  .btn-danger{background:var(--danger);color:#2A1210;}
+  .btn-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;}
+
+  /* ---------- live dashboard ---------- */
+  #liveSection{display:none;}
+  .live-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+  .class-badge{
+    display:inline-block;background:rgba(126,217,168,.14);color:var(--mint);font-weight:700;
+    font-size:13px;padding:6px 14px;border-radius:999px;
+  }
+  .icon-btn{
+    background:var(--bg-panel-2);border:1.5px solid var(--rule);color:var(--ink);border-radius:9px;
+    padding:8px 13px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;
+  }
+  .icon-btn:hover{border-color:var(--ink-dim);}
+
+  .qr-row{display:flex;align-items:center;gap:16px;justify-content:center;margin:18px 0;}
+  .qr-row img{border-radius:10px;border:6px solid var(--bg-panel-2);}
+  .link-box{font-size:13px;color:var(--ink-dim);word-break:break-all;max-width:260px;}
+
+  .stats{display:flex;justify-content:center;gap:56px;margin:20px 0 22px;}
+  .stat{text-align:center;}
+  .stat-num{font-family:'Kanit',sans-serif;font-size:38px;font-weight:800;color:var(--yellow);}
+  .stat-label{font-size:12.5px;color:var(--ink-dim);margin-top:2px;}
+
+  #ticketList{max-height:360px;overflow-y:auto;margin-top:4px;padding-right:4px;}
+  .ticket-card{
+    background:var(--bg-panel-2);border:1px solid var(--rule);border-radius:12px;
+    padding:14px 16px;margin-bottom:10px;
+  }
+  .ticket-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;}
+  .ticket-name{font-weight:700;font-size:15px;}
+  .ticket-stars{color:var(--yellow);font-size:14px;letter-spacing:1px;flex:none;}
+  .ticket-text{font-size:13.5px;color:var(--ink-dim);line-height:1.55;margin-top:3px;}
+  .ticket-text b{color:var(--ink);font-weight:600;}
+  .ticket-empty{color:var(--ink-dim);text-align:center;padding:26px 0;font-size:14.5px;}
+
+  .status-msg{text-align:center;padding:10px;border-radius:9px;margin-top:14px;font-weight:600;font-size:14px;}
+  .status-ok{background:rgba(126,217,168,.14);color:var(--mint);}
+  .status-err{background:rgba(228,103,92,.14);color:var(--danger);}
+
+  /* ---------- presentation mode ---------- */
+  body.present-mode{padding:0;}
+  body.present-mode .wrap{max-width:none;}
+  body.present-mode .top,
+  body.present-mode #setupSection{display:none !important;}
+  body.present-mode .panel{border:none;border-radius:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:40px 6vw;}
+  body.present-mode .stat-num{font-size:clamp(48px,8vw,90px);}
+  body.present-mode .stat-label{font-size:16px;}
+  body.present-mode .qr-row img{width:150px;height:150px;}
+
+  @media(max-width:560px){
+    .stats{gap:28px;}
+    .qr-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <div class="brand-mark">🎫</div>
+      <div>
+        <h1>Exit Ticket</h1>
+        <span>ห้องควบคุมสำหรับครู</span>
+      </div>
+    </div>
+    <div class="class-picker">
+      <label for="classSelect">ห้องเรียน</label>
+      <select id="classSelect"></select>
+    </div>
+  </div>
+
+  <div class="panel" id="setupSection">
+    <p style="margin-top:0;">กดเริ่มเพื่อเปิดรับ Exit Ticket จากนักเรียนท้ายคาบ นักเรียนสแกน QR หรือเปิดลิงก์เพื่อกรอกแบบฟอร์มได้ทันที</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="startBtn">🚀 เริ่มรับ Exit Ticket</button>
+    </div>
+  </div>
+
+  <div class="panel" id="liveSection">
+    <div class="live-top">
+      <span class="class-badge" id="classBadge"></span>
+      <div>
+        <button class="icon-btn" id="toggleQrBtn">🔳 QR</button>
+        <button class="icon-btn" id="fullscreenBtn">⛶ เต็มจอ</button>
+      </div>
+    </div>
+
+    <div class="qr-row" id="qrRow">
+      <img id="qrImg" src="" alt="QR Code" width="150" height="150">
+      <div class="link-box" id="linkText"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="countNum">0</div><div class="stat-label">คนส่งแล้ว</div></div>
+      <div class="stat"><div class="stat-num" id="avgRating">-</div><div class="stat-label">คะแนนเฉลี่ย (เต็ม 5)</div></div>
+    </div>
+
+    <div id="ticketList"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-danger" id="closeBtn">⏹️ ปิดรับ &amp; บันทึกลง Sheet</button>
+      <button class="btn btn-secondary" id="newSessionBtn">🔄 เริ่มคาบใหม่</button>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, setDoc, updateDoc, collection, query, where, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, APPS_SCRIPT_URL, CLASS_LIST } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ===== class selector ===== */
+const classSelect = document.getElementById("classSelect");
+CLASS_LIST.forEach(c => {
+  const opt = document.createElement("option");
+  opt.value = c;
+  opt.textContent = "ม." + c.replace("-", "/");
+  classSelect.appendChild(opt);
+});
+
+let CLASS_ID = classSelect.value; // ⚠️ เดิมชื่อชนกับ CLASS_LIST ที่ import มา ทำให้สคริปต์ทั้งไฟล์รันไม่ได้
+function getSessionRef() { return doc(db, "exitTickets", CLASS_ID); }
+
+let unsub = null;
+let currentSessionId = null;
+let latestTickets = [];
+
+document.getElementById("startBtn").addEventListener("click", startSession);
+document.getElementById("closeBtn").addEventListener("click", closeSession);
+document.getElementById("newSessionBtn").addEventListener("click", resetToSetup);
+
+async function startSession() {
+  CLASS_ID = classSelect.value; // ล็อกห้องที่เลือกไว้ตอนกดเริ่ม
+  currentSessionId = Date.now().toString();
+
+  try {
+    await setDoc(getSessionRef(), {
+      active: true, sessionId: currentSessionId,
+      date: new Date().toLocaleDateString("th-TH"), createdAt: serverTimestamp()
+    });
+  } catch (err) {
+    alert("เริ่มรับ Exit Ticket ไม่สำเร็จ: " + err.message);
+    console.error(err);
+    return;
+  }
+
+  document.getElementById("setupSection").style.display = "none";
+  document.getElementById("liveSection").style.display = "block";
+  document.getElementById("statusMsg").textContent = "";
+  document.getElementById("classBadge").textContent = "ห้อง ม." + CLASS_ID.replace("-", "/");
+
+  const studentUrl = `${location.origin}${location.pathname.replace('exit-ticket-teacher.html','exit-ticket-student.html')}?class=${encodeURIComponent(CLASS_ID)}`;
+  document.getElementById("qrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(studentUrl)}`;
+  document.getElementById("linkText").textContent = studentUrl;
+
+  listenSubmissions();
+}
+
+function listenSubmissions() {
+  if (unsub) unsub();
+  const subsRef = collection(db, "exitTickets", CLASS_ID, "submissions");
+  const q = query(subsRef, where("sessionId", "==", currentSessionId));
+  unsub = onSnapshot(q, (snap) => {
+    latestTickets = [];
+    snap.forEach(d => latestTickets.push(d.data()));
+    renderTickets();
+  }, (err) => {
+    console.error(err);
+  });
+}
+
+function escapeHtml(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML;}
+
+function renderTickets() {
+  document.getElementById("countNum").textContent = latestTickets.length;
+  const ratings = latestTickets.map(t => Number(t.rating) || 0).filter(r => r > 0);
+  const avg = ratings.length ? (ratings.reduce((a,b)=>a+b,0) / ratings.length).toFixed(1) : "-";
+  document.getElementById("avgRating").textContent = avg;
+
+  const list = document.getElementById("ticketList");
+  if (!latestTickets.length) {
+    list.innerHTML = `<div class="ticket-empty">กำลังรอนักเรียนส่ง Exit Ticket...</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  latestTickets.slice().reverse().forEach(t => {
+    const div = document.createElement("div");
+    div.className = "ticket-card";
+    div.innerHTML = `
+      <div class="ticket-head">
+        <span class="ticket-name">${escapeHtml(t.name) || "ไม่ระบุชื่อ"}</span>
+        <span class="ticket-stars">${"★".repeat(Number(t.rating)||0)}${"☆".repeat(5-(Number(t.rating)||0))}</span>
+      </div>
+      <div class="ticket-text"><b>สิ่งที่เรียนรู้:</b> ${escapeHtml(t.learned) || "-"}</div>
+      ${t.question ? `<div class="ticket-text"><b>คำถามที่สงสัย:</b> ${escapeHtml(t.question)}</div>` : ""}`;
+    list.appendChild(div);
+  });
+}
+
+/* ===== live view actions ===== */
+document.getElementById("toggleQrBtn").addEventListener("click", () => {
+  const row = document.getElementById("qrRow");
+  row.style.display = row.style.display === "none" ? "flex" : "none";
+});
+document.getElementById("fullscreenBtn").addEventListener("click", () => {
+  document.body.classList.add("present-mode");
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+});
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) document.body.classList.remove("present-mode");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("present-mode") && !document.fullscreenElement) {
+    document.body.classList.remove("present-mode");
+  }
+});
+
+async function closeSession() {
+  if (!confirm("ปิดรับ Exit Ticket และบันทึกลง Sheet ใช่หรือไม่?")) return;
+
+  try {
+    await updateDoc(getSessionRef(), { active: false });
+  } catch (err) {
+    alert("ปิดรับไม่สำเร็จ: " + err.message);
+    console.error(err);
+    return;
+  }
+
+  const statusEl = document.getElementById("statusMsg");
+  statusEl.textContent = "กำลังบันทึก...";
+  statusEl.className = "status-msg";
+
+  const tickets = latestTickets.map(t => ({ name: t.name || "", learned: t.learned || "", rating: t.rating || "", question: t.question || "" }));
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "saveExitTickets", payload: { classId: "ม." + CLASS_ID.replace("-", "/"), date: new Date().toLocaleDateString("th-TH"), tickets } })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    statusEl.textContent = `✅ บันทึกลง Sheet สำเร็จ (${tickets.length} รายการ)`;
+    statusEl.className = "status-msg status-ok";
+  } catch (err) {
+    statusEl.textContent = "❌ บันทึกไม่สำเร็จ: " + err.message;
+    statusEl.className = "status-msg status-err";
+  }
+}
+
+function resetToSetup() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.body.classList.remove("present-mode");
+  if (unsub) unsub();
+  document.getElementById("liveSection").style.display = "none";
+  document.getElementById("setupSection").style.display = "block";
+  latestTickets = [];
+}
+</script>
+</body>
+</html>

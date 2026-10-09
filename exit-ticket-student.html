@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Ticket — นักเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16241C;
+    --bg-panel:#1F3327;
+    --bg-panel-2:#233A2C;
+    --ink:#F3F1E7;
+    --ink-dim:#B9C4B7;
+    --rule:rgba(243,241,231,.14);
+    --yellow:#F2C744;
+    --sky:#74B9E7;
+    --mint:#7ED9A8;
+    --coral:#F2789F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Sarabun',sans-serif;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(126,217,168,.08), transparent 55%),
+      radial-gradient(ellipse at 100% 110%, rgba(116,185,231,.08), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:22px;
+  }
+  .card{
+    background:var(--bg-panel);border:1px solid var(--rule);border-radius:18px;
+    padding:30px 26px;max-width:440px;width:100%;
+  }
+  .kicker{font-family:'Kanit',sans-serif;font-weight:700;font-size:14.5px;color:var(--mint);
+    letter-spacing:.2px;margin-bottom:18px;text-align:center;}
+
+  .center-msg{text-align:center;padding:20px 0;}
+  .big-icon{font-size:44px;margin-bottom:12px;}
+  .waiting{animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .msg{color:var(--ink-dim);font-size:15px;}
+
+  label{display:block;font-weight:600;margin-top:16px;margin-bottom:7px;color:var(--ink-dim);font-size:13.5px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], textarea{
+    width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--rule);
+    background:var(--bg-panel-2);color:var(--ink);font-size:15.5px;font-family:'Sarabun',sans-serif;
+  }
+  input[type=text]:focus, textarea:focus{outline:2px solid var(--mint);outline-offset:1px;}
+  input[type=text]::placeholder, textarea::placeholder{color:#7C8A80;}
+  textarea{resize:vertical;min-height:72px;}
+
+  .stars{display:flex;gap:8px;justify-content:center;margin-top:6px;}
+  .star{font-size:32px;cursor:pointer;color:#3A4C40;user-select:none;line-height:1;transition:.1s;}
+  .star.active{color:var(--yellow);}
+
+  .submit-btn{
+    width:100%;padding:14px;margin-top:22px;border:none;border-radius:12px;
+    background:var(--mint);color:#12241A;font-weight:700;font-size:16px;font-family:'Sarabun',sans-serif;
+    cursor:pointer;
+  }
+  .submit-btn:hover{filter:brightness(1.05);}
+</style>
+</head>
+<body>
+<div class="card" id="mainCard">
+  <div class="kicker">🎫 EXIT TICKET</div>
+  <div id="content">
+    <div class="center-msg">
+      <div class="big-icon waiting">⏳</div>
+      <div class="msg">กำลังรอครูเปิดรับ Exit Ticket...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, collection, addDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, CLASS_LIST } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const params = new URLSearchParams(location.search);
+const classId = params.get("class") || CLASS_LIST[0];
+const sessionRef = doc(db, "exitTickets", classId);
+const contentEl = document.getElementById("content");
+
+let currentSessionId = null;
+let selectedRating = 0;
+
+onSnapshot(sessionRef, (snap) => {
+  if (!snap.exists()) return renderWaiting();
+  const data = snap.data();
+  currentSessionId = data.sessionId;
+  const submittedId = localStorage.getItem(`exitSubmitted_${classId}`);
+  if (!data.active) return renderClosed();
+  if (submittedId === currentSessionId) return renderThanks();
+  renderForm();
+}, (err) => {
+  contentEl.innerHTML = `<div class="center-msg"><div class="big-icon">⚠️</div><div class="msg">เชื่อมต่อไม่สำเร็จ: ${escapeHtml(err.message)}</div></div>`;
+});
+
+function escapeHtml(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML;}
+
+function renderWaiting() {
+  contentEl.innerHTML = `<div class="center-msg"><div class="big-icon waiting">⏳</div><div class="msg">กำลังรอครูเปิดรับ Exit Ticket...</div></div>`;
+}
+function renderClosed() {
+  contentEl.innerHTML = `<div class="center-msg"><div class="big-icon">🔒</div><div class="msg">ปิดรับ Exit Ticket แล้ว ขอบคุณครับ/ค่ะ</div></div>`;
+}
+function renderThanks() {
+  contentEl.innerHTML = `<div class="center-msg"><div class="big-icon">🙏</div><div class="msg">ส่ง Exit Ticket เรียบร้อยแล้ว ขอบคุณครับ/ค่ะ</div></div>`;
+}
+
+function renderForm() {
+  selectedRating = 0;
+  contentEl.innerHTML = `
+    <label>ชื่อ-นามสกุล</label>
+    <input type="text" id="nameInput" placeholder="ชื่อของคุณ">
+    <label>วันนี้เรียนรู้อะไรบ้าง?</label>
+    <textarea id="learnedInput" placeholder="สรุปสิ่งที่ได้เรียนรู้ในคาบนี้"></textarea>
+    <label>ระดับความเข้าใจในบทเรียนวันนี้</label>
+    <div class="stars" id="starsBox">${[1,2,3,4,5].map(n => `<span class="star" data-val="${n}">★</span>`).join("")}</div>
+    <label>มีคำถามหรือสิ่งที่ยังไม่เข้าใจไหม? (ไม่บังคับ)</label>
+    <textarea id="questionInput" placeholder="พิมพ์คำถามที่นี่ (ถ้ามี)"></textarea>
+    <button class="submit-btn" id="submitBtn">📤 ส่ง Exit Ticket</button>
+  `;
+  document.querySelectorAll("#starsBox .star").forEach(star => {
+    star.addEventListener("click", () => {
+      selectedRating = parseInt(star.dataset.val);
+      document.querySelectorAll("#starsBox .star").forEach(s => s.classList.toggle("active", parseInt(s.dataset.val) <= selectedRating));
+    });
+  });
+  document.getElementById("submitBtn").addEventListener("click", submitTicket);
+}
+
+async function submitTicket() {
+  const name = document.getElementById("nameInput").value.trim();
+  const learned = document.getElementById("learnedInput").value.trim();
+  const question = document.getElementById("questionInput").value.trim();
+  if (!name) return alert("กรุณากรอกชื่อ-นามสกุล");
+  if (!learned) return alert("กรุณาสรุปสิ่งที่เรียนรู้");
+  if (selectedRating === 0) return alert("กรุณาให้คะแนนความเข้าใจ");
+
+  try {
+    await addDoc(collection(db, "exitTickets", classId, "submissions"), {
+      name, learned, rating: selectedRating, question, sessionId: currentSessionId, timestamp: serverTimestamp()
+    });
+    localStorage.setItem(`exitSubmitted_${classId}`, currentSessionId);
+    renderThanks();
+  } catch (err) {
+    alert("ส่งไม่สำเร็จ: " + err.message);
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>

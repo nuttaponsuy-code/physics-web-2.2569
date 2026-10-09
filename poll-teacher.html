@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhyPoll — Premium Control Room | @Skunkworks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg-0:#f3f4f9;
+    --bg-1:#ffffff;
+    --bg-2:#eef0f7;
+    --bg-3:#e3e6f0;
+    --border:rgba(15,23,42,.10);
+    --border-hi:rgba(15,23,42,.22);
+    --ink:#1a1f2e;
+    --ink-dim:#5b6178;
+    --ink-faint:#8a90a8;
+    --accent:#7c5cff;
+    --accent-2:#00e0ff;
+    --accent-3:#ff4d8d;
+    --success:#00e676;
+    --warning:#ffab00;
+    --danger:#ff3d5a;
+    --yellow:#ffd166;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 12px 36px rgba(15,23,42,.10);
+    --glow:0 0 40px rgba(124,92,255,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Sarabun',sans-serif;
+    background:var(--bg-0);
+    color:var(--ink);
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 600px 400px at 10% 20%, rgba(124,92,255,.15), transparent 60%),
+      radial-gradient(ellipse 500px 500px at 90% 80%, rgba(0,224,255,.1), transparent 60%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(255,77,141,.08), transparent 60%);
+    animation:bgShift 20s ease-in-out infinite alternate;
+  }
+  @keyframes bgShift{
+    0%{filter:hue-rotate(0deg);}
+    100%{filter:hue-rotate(30deg);}
+  }
+  body::after{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;
+    background-image:
+      linear-gradient(rgba(15,23,42,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,.035) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:32px 24px 80px;}
+
+  .top{
+    display:flex;align-items:center;justify-content:space-between;gap:20px;
+    padding:18px 24px;margin-bottom:28px;
+    background:rgba(255,255,255,.75);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-mark{
+    width:44px;height:44px;border-radius:12px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:800;color:#fff;
+    box-shadow:0 8px 24px rgba(124,92,255,.4);
+    position:relative;overflow:hidden;
+  }
+  .brand-mark::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent 40%, rgba(255,255,255,.3) 50%, transparent 60%);
+    animation:shimmer 3s infinite;
+  }
+  @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+  .brand h1{font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.3px;}
+  .brand h1 span{
+    background:linear-gradient(135deg, var(--accent-2), var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand .sub{font-size:12px;color:var(--ink-dim);margin-top:2px;font-weight:500;}
+  .brand .dev{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--accent-2);background:rgba(0,224,255,.08);
+    padding:3px 10px;border-radius:999px;margin-top:4px;
+    border:1px solid rgba(0,224,255,.2);
+  }
+  .brand .dev::before{content:'⚡';}
+  .class-picker{display:flex;align-items:center;gap:10px;}
+  .class-picker label{font-size:13px;color:var(--ink-dim);font-weight:500;}
+  select{
+    background:var(--bg-2);color:var(--ink);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:10px 16px;font-family:'Sarabun',sans-serif;
+    font-size:14px;font-weight:600;cursor:pointer;transition:.2s;
+  }
+  select:hover{border-color:var(--border-hi);}
+  select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.2);}
+
+  .meta-panel{
+    background:rgba(255,255,255,.75);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px 24px;margin-bottom:20px;
+  }
+  .meta-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;}
+  .meta-field{flex:1;min-width:220px;}
+  .meta-field-narrow{flex:0 0 180px;min-width:140px;}
+  .meta-field label{display:block;font-size:12px;font-weight:600;color:var(--ink-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+  .meta-field input{
+    width:100%;padding:11px 14px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);background:var(--bg-2);color:var(--ink);
+    font-size:14px;font-family:'Sarabun',sans-serif;transition:.2s;
+  }
+  .meta-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.15);}
+
+  .tabs{
+    display:flex;gap:4px;margin-bottom:20px;
+    background:rgba(255,255,255,.75);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);padding:4px;
+  }
+  .tab-btn{
+    flex:1;background:none;border:none;color:var(--ink-dim);
+    font-family:'Sarabun',sans-serif;font-weight:600;font-size:14px;
+    padding:12px 16px;cursor:pointer;border-radius:var(--radius-sm);transition:.2s;
+    position:relative;
+  }
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#fff;box-shadow:0 4px 20px rgba(124,92,255,.4);
+  }
+  .tab-btn .badge{
+    display:inline-block;background:rgba(255,255,255,.2);
+    padding:1px 7px;border-radius:999px;font-size:11px;margin-left:6px;
+  }
+
+  .panel{
+    background:rgba(255,255,255,.75);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:28px;margin-bottom:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .type-switch{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+  .type-opt{
+    padding:16px 12px;border-radius:var(--radius-sm);
+    border:1.5px solid var(--border);background:var(--bg-2);
+    cursor:pointer;text-align:center;transition:.2s;position:relative;overflow:hidden;
+  }
+  .type-opt:hover{border-color:var(--border-hi);transform:translateY(-2px);}
+  .type-opt.active{
+    border-color:var(--accent);background:rgba(124,92,255,.1);
+    box-shadow:0 0 0 3px rgba(124,92,255,.15), inset 0 0 20px rgba(124,92,255,.1);
+  }
+  .type-opt .icon{font-size:24px;margin-bottom:6px;display:block;}
+  .type-opt strong{display:block;font-family:'Kanit',sans-serif;font-size:14px;color:var(--ink);font-weight:600;margin-bottom:2px;}
+  .type-opt small{font-size:11px;color:var(--ink-dim);}
+
+  label.field-label{display:block;font-size:12px;font-weight:600;color:var(--ink-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+  label.field-label:first-of-type{margin-top:0;}
+  input[type=text], textarea{
+    width:100%;padding:13px 16px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);background:var(--bg-2);color:var(--ink);
+    font-size:15px;font-family:'Sarabun',sans-serif;transition:.2s;
+  }
+  input[type=text]:focus, textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.15);}
+  input::placeholder, textarea::placeholder{color:var(--ink-faint);}
+
+  .image-upload{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border:2px dashed var(--border);border-radius:var(--radius-sm);
+    background:var(--bg-2);cursor:pointer;transition:.2s;margin-top:8px;
+  }
+  .image-upload:hover{border-color:var(--accent);background:rgba(124,92,255,.05);}
+  .image-upload .icon{font-size:24px;}
+  .image-upload .text{font-size:13px;color:var(--ink-dim);}
+  .image-upload .text strong{display:block;color:var(--ink);font-size:14px;margin-bottom:2px;}
+  .image-preview-wrap{position:relative;margin-top:12px;display:inline-block;}
+  .image-preview{max-width:280px;max-height:180px;border-radius:var(--radius-sm);border:1px solid var(--border);}
+  .image-preview-wrap .img-remove{
+    position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;
+    background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:14px;font-weight:700;
+    box-shadow:0 4px 12px rgba(255,61,90,.4);
+  }
+
+  .option-row{display:flex;gap:10px;margin-bottom:10px;align-items:center;}
+  .option-row .idx{
+    width:32px;height:32px;border-radius:8px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;color:#fff;
+  }
+  .option-row input{flex:1;}
+  .btn-remove{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--ink-dim);
+    border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:14px;transition:.2s;
+  }
+  .btn-remove:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,61,90,.1);}
+  .add-option{
+    background:none;border:1.5px dashed var(--border);color:var(--ink-dim);
+    border-radius:var(--radius-sm);padding:12px;width:100%;cursor:pointer;
+    font-weight:600;font-size:14px;margin-top:4px;transition:.2s;
+  }
+  .add-option:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,92,255,.05);}
+
+  .rating-preview{display:flex;gap:8px;margin-top:10px;justify-content:center;}
+  .rating-star{font-size:32px;cursor:pointer;transition:.15s;filter:grayscale(.5) opacity(.4);}
+  .rating-star.active{filter:none;transform:scale(1.1);}
+  .rating-star:hover{transform:scale(1.2);}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:700;font-family:'Sarabun',sans-serif;cursor:pointer;transition:.2s;
+    position:relative;overflow:hidden;
+  }
+  .btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent 40%, rgba(255,255,255,.2) 50%, transparent 60%);
+    transform:translateX(-100%);transition:.4s;
+  }
+  .btn:hover::before{transform:translateX(100%);}
+  .btn-primary{
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));color:#fff;
+    box-shadow:0 8px 24px rgba(124,92,255,.4);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,92,255,.5);}
+  .btn-secondary{background:var(--bg-2);color:var(--ink);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--border-hi);background:var(--bg-3);}
+  .btn-ghost{background:none;color:var(--ink-dim);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--border-hi);}
+  .btn-danger{background:linear-gradient(135deg, var(--danger), var(--accent-3));color:#fff;box-shadow:0 8px 24px rgba(255,61,90,.3);}
+  .btn-success{background:linear-gradient(135deg, var(--success), #00c853);color:#052e16;box-shadow:0 8px 24px rgba(0,230,118,.3);}
+  .form-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;}
+
+  .bank-empty{color:var(--ink-dim);font-size:14px;text-align:center;padding:40px 10px;}
+  .bank-card{
+    border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:12px;
+    display:flex;justify-content:space-between;gap:16px;align-items:flex-start;
+    background:var(--bg-2);transition:.2s;
+  }
+  .bank-card:hover{border-color:var(--border-hi);transform:translateX(4px);}
+  .bank-card-main{min-width:0;display:flex;gap:14px;}
+  .bank-thumb{width:60px;height:60px;object-fit:cover;border-radius:10px;flex:none;border:1px solid var(--border);}
+  .bank-card-text{min-width:0;}
+  .badge-type{
+    display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;
+    margin-bottom:8px;font-family:'Sarabun',sans-serif;
+  }
+  .badge-choice{background:rgba(0,224,255,.15);color:var(--accent-2);}
+  .badge-text{background:rgba(255,77,141,.15);color:var(--accent-3);}
+  .badge-rating{background:rgba(255,209,102,.15);color:var(--yellow);}
+  .bank-q{font-size:15px;font-weight:600;margin-bottom:6px;line-height:1.4;}
+  .bank-opts{font-size:12px;color:var(--ink-dim);line-height:1.6;}
+  .bank-actions{display:flex;flex-direction:column;gap:8px;flex:none;}
+
+  #liveView{display:none;}
+  .live-shell{
+    background:rgba(255,255,255,.75);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:32px;box-shadow:var(--shadow);
+    /* 🔒 ป้องกัน gsap ทิ้ง inline opacity ค้าง */
+    opacity:1 !important;
+    transform:none !important;
+  }
+  /* อนุญาตให้ gsap animate ได้เฉพาะตอน .animating เท่านั้น */
+  .live-shell.animating{opacity:0 !important;transform:translateY(30px) !important;}
+  .live-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .class-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg, rgba(124,92,255,.2), rgba(0,224,255,.2));
+    color:var(--ink);font-weight:700;font-size:13px;padding:8px 16px;border-radius:999px;
+    border:1px solid rgba(124,92,255,.3);
+  }
+  .class-badge::before{content:'🎓';}
+  .live-tools{display:flex;gap:8px;flex-wrap:wrap;}
+  .icon-btn{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--ink);border-radius:var(--radius-sm);
+    padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:.2s;
+  }
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+
+  .timer-wrap{display:flex;align-items:center;gap:12px;margin:20px 0;}
+  .timer-display{
+    font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:600;
+    background:linear-gradient(135deg, var(--accent-2), var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    min-width:100px;text-align:center;
+  }
+  .timer-display.urgent{
+    background:linear-gradient(135deg, var(--danger), var(--accent-3));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:pulse 1s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+  .timer-ring{width:80px;height:80px;position:relative;}
+  .timer-ring svg{transform:rotate(-90deg);}
+  .timer-ring circle{fill:none;stroke-width:6;}
+  .timer-ring .bg{stroke:var(--border);}
+  .timer-ring .fg{stroke:url(#timerGrad);stroke-linecap:round;transition:stroke-dashoffset .3s;}
+  .timer-controls{display:flex;gap:6px;margin-left:auto;}
+
+  .topic-line{text-align:center;font-size:13px;color:var(--ink-dim);margin:16px 0;}
+  .topic-line b{color:var(--ink);font-weight:600;}
+
+  .qr-row{display:flex;align-items:center;gap:20px;justify-content:center;margin:24px 0;flex-wrap:wrap;}
+  .qr-box{
+    background:#fff;padding:12px;border-radius:var(--radius-sm);
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .link-box{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim);
+    word-break:break-all;max-width:280px;padding:12px 16px;
+    background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  }
+
+  .stage{padding:20px 4px;text-align:center;}
+  .stage-image{max-width:100%;max-height:300px;border-radius:var(--radius);border:1px solid var(--border);margin:0 auto 24px;display:block;box-shadow:var(--shadow);}
+  .question-wrap{position:relative;display:inline-block;max-width:100%;margin-bottom:40px;}
+  .question-display{
+    font-family:'Kanit',sans-serif;font-weight:700;line-height:1.3;color:var(--ink);
+    font-size:clamp(24px,3.6vw,38px);
+    text-shadow:0 0 20px rgba(124,92,255,.12);
+  }
+  .chalk-underline{display:block;width:70%;height:12px;margin:12px auto 0;}
+  .chalk-underline path{stroke:var(--accent);stroke-width:3;fill:none;stroke-linecap:round;opacity:.8;}
+
+  .bars{max-width:700px;margin:0 auto;text-align:left;}
+  .bar-row{margin-bottom:18px;}
+  .bar-label{display:flex;justify-content:space-between;font-weight:600;font-size:14px;margin-bottom:8px;}
+  .bar-track{background:var(--bg-2);border-radius:10px;height:38px;overflow:hidden;border:1px solid var(--border);}
+  .bar-fill{
+    height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;
+    color:#fff;font-weight:700;font-size:13px;transition:width .6s cubic-bezier(.2,.9,.3,1);
+    white-space:nowrap;min-width:2%;position:relative;overflow:hidden;
+    /* 🔒 GPU acceleration ลด repaint */
+    will-change:width;
+  }
+  .bar-fill::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+    animation:shimmer 2s infinite;
+  }
+
+  .cloud{display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:center;align-items:center;max-width:800px;margin:0 auto;min-height:120px;padding:10px 0;}
+  .tag{
+    font-family:'Kanit',sans-serif;font-weight:700;padding:8px 6px;border-radius:10px;
+    line-height:1.2;
+    background:rgba(15,23,42,.04);backdrop-filter:blur(10px);
+    border:1px solid var(--border);
+  }
+  /* 🔒 เฉพาะ tag ใหม่เท่านั้นที่ animate (ใช้ class .new) */
+  .tag.new{animation:pop .4s cubic-bezier(.2,.9,.3,1);}
+  @keyframes pop{from{transform:scale(0) rotate(-10deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+  .cloud-empty{color:var(--ink-dim);font-size:14px;padding:30px 0;}
+
+  .total-line{text-align:center;color:var(--ink-dim);font-size:13px;margin-top:24px;font-family:'JetBrains Mono',monospace;}
+  .live-actions{display:flex;justify-content:center;gap:10px;margin-top:28px;flex-wrap:wrap;}
+  .status-msg{text-align:center;padding:12px;border-radius:var(--radius-sm);margin-top:16px;font-weight:600;font-size:14px;}
+  .status-ok{background:rgba(0,230,118,.1);color:var(--success);border:1px solid rgba(0,230,118,.2);}
+  .status-err{background:rgba(255,61,90,.1);color:var(--danger);border:1px solid rgba(255,61,90,.2);}
+
+  #toastContainer{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999;width:min(92vw,420px);}
+  .toast{
+    background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-left:4px solid var(--accent-2);
+    color:var(--ink);padding:14px 18px;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:600;box-shadow:var(--shadow);
+    animation:toastIn .3s cubic-bezier(.2,.9,.3,1);
+  }
+  .toast.success{border-left-color:var(--success);}
+  .toast.error{border-left-color:var(--danger);}
+  .toast.warning{border-left-color:var(--warning);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+  #modalOverlay{position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px;}
+  #modalOverlay.show{display:flex;}
+  .modal-box{
+    background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:28px;max-width:400px;width:100%;text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .modal-box p{font-size:15px;margin-bottom:24px;line-height:1.6;}
+  .modal-actions{display:flex;gap:10px;justify-content:center;}
+
+  .footer{
+    text-align:center;margin-top:40px;padding:20px;
+    font-size:12px;color:var(--ink-faint);
+  }
+  .footer .dev-credit{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'JetBrains Mono',monospace;
+    color:var(--accent-2);
+    background:rgba(0,224,255,.05);
+    padding:6px 16px;border-radius:999px;
+    border:1px solid rgba(0,224,255,.15);
+  }
+
+  body.present-mode{padding:0;}
+  body.present-mode .wrap{max-width:none;padding:0;}
+  body.present-mode .top,
+  body.present-mode .meta-panel,
+  body.present-mode .tabs,
+  body.present-mode #setupView,
+  body.present-mode .footer{display:none !important;}
+  body.present-mode .live-shell{
+    border:none;border-radius:0;min-height:100vh;
+    display:flex;flex-direction:column;justify-content:center;padding:40px 6vw;
+  }
+  body.present-mode .question-display{font-size:clamp(32px,5.6vw,64px);}
+  body.present-mode .topic-line{font-size:18px;}
+  body.present-mode .bars,body.present-mode .cloud{max-width:1000px;}
+  body.present-mode .bar-track{height:50px;}
+  body.present-mode .bar-label{font-size:18px;}
+  body.present-mode .stage-image{max-height:40vh;}
+
+  @media(max-width:768px){
+    .type-switch{grid-template-columns:repeat(2,1fr);}
+    .bank-card{flex-direction:column;}
+    .bank-actions{flex-direction:row;width:100%;}
+    .bank-actions button{flex:1;}
+    .qr-row{flex-direction:column;}
+    .meta-row{flex-direction:column;}
+    .meta-field-narrow{flex:1;}
+    .timer-wrap{flex-wrap:wrap;justify-content:center;}
+    .timer-controls{margin-left:0;width:100%;justify-content:center;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <div class="brand-mark">⚡</div>
+      <div>
+        <h1>โพล<span>สด</span></h1>
+        <div class="sub">Premium Control Room</div>
+        <div class="dev">@Skunkworks</div>
+      </div>
+    </div>
+    <div class="class-picker">
+      <label for="classSelect">ห้องเรียน</label>
+      <select id="classSelect"></select>
+    </div>
+  </div>
+
+  <div id="setupView">
+
+    <div class="meta-panel">
+      <div class="meta-row">
+        <div class="meta-field">
+          <label for="topicInput">📚 หัวข้อ / จุดประสงค์การเรียนรู้</label>
+          <input type="text" id="topicInput" placeholder="เช่น กฎการเคลื่อนที่ข้อที่ 2 ของนิวตัน">
+        </div>
+        <div class="meta-field meta-field-narrow">
+          <label for="expectedCountInput">👥 จำนวนนักเรียน</label>
+          <input type="text" inputmode="numeric" id="expectedCountInput" placeholder="เช่น 40">
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="create">✨ สร้างคำถามใหม่</button>
+      <button class="tab-btn" data-tab="bank">📦 คลังคำถาม <span id="bankCount" class="badge">0</span></button>
+    </div>
+
+    <div class="panel" id="createTab">
+      <div class="type-switch">
+        <div class="type-opt active" data-type="choice">
+          <span class="icon">🎯</span>
+          <strong>เลือกตอบ</strong>
+          <small>แตะตัวเลือก</small>
+        </div>
+        <div class="type-opt" data-type="text">
+          <span class="icon"></span>
+          <strong>พิมพ์ตอบ</strong>
+          <small>คำตอบอิสระ</small>
+        </div>
+        <div class="type-opt" data-type="rating">
+          <span class="icon">⭐</span>
+          <strong>ให้คะแนน</strong>
+          <small>สเกล 1-5</small>
+        </div>
+        <div class="type-opt" data-type="quiz">
+          <span class="icon">🏆</span>
+          <strong>แบบทดสอบ</strong>
+          <small>มีคำตอบถูก</small>
+        </div>
+      </div>
+
+      <label class="field-label" for="questionInput">❓ คำถาม</label>
+      <textarea id="questionInput" rows="2" placeholder="เช่น แรงลัพธ์ที่กระทำต่อวัตถุนี้มีทิศทางใด?"></textarea>
+
+      <label class="field-label" style="margin-top:16px;">🖼️ แนบรูปภาพ (ไม่บังคับ)</label>
+      <input type="file" id="imageInput" accept="image/*" hidden>
+      <div class="image-upload" id="pickImageBtn">
+        <span class="icon">📤</span>
+        <div class="text">
+          <strong>คลิกเพื่อเลือกรูปภาพ</strong>
+          แนะนำใช้ภาพแผนภาพ/กราฟ — จะถูกย่อขนาดอัตโนมัติ
+        </div>
+      </div>
+      <div class="image-preview-wrap" id="imagePreviewWrap" style="display:none;">
+        <img id="imagePreview" class="image-preview">
+        <button class="img-remove" id="removeImageBtn" type="button">✕</button>
+      </div>
+
+      <div id="choiceFields">
+        <label class="field-label" style="margin-top:20px;">📝 ตัวเลือกคำตอบ</label>
+        <div id="optionsContainer"></div>
+        <button class="add-option" id="addOptionBtn" type="button">+ เพิ่มตัวเลือก</button>
+      </div>
+
+      <div id="ratingFields" style="display:none;">
+        <label class="field-label" style="margin-top:20px;">⭐ ตัวอย่างสเกล</label>
+        <div class="rating-preview" id="ratingPreview"></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="saveToBankBtn">💾 บันทึกลงคลัง</button>
+        <button class="btn btn-primary" id="startNowBtn"> เริ่มโพลทันที</button>
+      </div>
+    </div>
+
+    <div class="panel" id="bankTab" style="display:none;">
+      <p style="color:var(--ink-dim);font-size:13px;margin-bottom:18px;line-height:1.6;">
+        💡 คลังนี้ใช้ร่วมกันได้ทุกห้อง — สร้างคำถามเก็บไว้ครั้งเดียว แล้วเลือกห้องเรียนที่มุมขวาบนก่อนกด "เริ่มโพลนี้"
+      </p>
+      <div id="bankList"></div>
+    </div>
+  </div>
+
+  <div id="liveView">
+    <div class="live-shell">
+      <div class="live-top">
+        <span class="class-badge" id="classBadge">ห้องเรียน</span>
+        <div class="live-tools">
+          <button class="icon-btn" id="toggleQrBtn">📱 QR Code</button>
+          <button class="icon-btn" id="toggleTimerBtn">⏱️ ตั้งเวลา</button>
+          <button class="icon-btn" id="fullscreenBtn">⛶ เต็มจอ</button>
+        </div>
+      </div>
+
+      <div class="timer-wrap" id="timerWrap" style="display:none;">
+        <div class="timer-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="var(--accent-2)"/>
+                <stop offset="100%" stop-color="var(--accent)"/>
+              </linearGradient>
+            </defs>
+            <circle class="bg" cx="40" cy="40" r="34"/>
+            <circle class="fg" id="timerCircle" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="0"/>
+          </svg>
+        </div>
+        <div class="timer-display" id="timerDisplay">00:30</div>
+        <div class="timer-controls">
+          <button class="icon-btn" id="timerStartBtn">▶ เริ่ม</button>
+          <button class="icon-btn" id="timerPauseBtn">⏸ หยุด</button>
+          <button class="icon-btn" id="timerResetBtn">↺ รีเซ็ต</button>
+        </div>
+      </div>
+
+      <div class="topic-line" id="topicLine" style="display:none;"></div>
+
+      <div class="qr-row" id="qrRow" style="display:none;">
+        <div class="qr-box" id="qrBox"></div>
+        <div class="link-box" id="linkText"></div>
+      </div>
+
+      <div class="stage">
+        <img class="stage-image" id="liveImage" style="display:none;">
+        <div class="question-wrap">
+          <div class="question-display" id="liveQuestion"></div>
+          <svg class="chalk-underline" viewBox="0 0 300 14" preserveAspectRatio="none">
+            <path d="M2,9 Q40,2 78,9 T154,9 T230,9 T298,9"/>
+          </svg>
+        </div>
+
+        <div class="bars" id="barsView" style="display:none;"></div>
+        <div class="cloud" id="cloudView" style="display:none;"></div>
+
+        <div class="total-line" id="totalVotes"></div>
+      </div>
+
+      <div class="live-actions">
+        <button class="btn btn-danger" id="closePollBtn">⏹️ ปิดโพล & บันทึกผล</button>
+        <button class="btn btn-secondary" id="newPollBtn">🔄 ตั้งคำถามใหม่</button>
+      </div>
+      <div id="statusMsg"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="dev-credit">⚡ Crafted by @Skunkworks — Premium Poll System v2.0</div>
+  </div>
+
+</div>
+
+<div id="toastContainer"></div>
+<div id="modalOverlay">
+  <div class="modal-box">
+    <p id="modalMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancelBtn">ยกเลิก</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, updateDoc, onSnapshot, serverTimestamp,
+  collection, addDoc, deleteDoc, getDocs, query, where, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, APPS_SCRIPT_URL, CLASS_LIST } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const CHALK = ['#7c5cff','#00e0ff','#ff4d8d','#00e676','#ffd166','#ff6b35'];
+const chalkColor = i => CHALK[i % CHALK.length];
+
+// ---------------------------------------------------------------------------
+// GSAP safety wrapper
+// ---------------------------------------------------------------------------
+function hasGsap() { return typeof gsap !== "undefined"; }
+function safeAnim(run) {
+  if (!hasGsap()) return;
+  try { run(); } catch (e) { console.warn("Animation skipped:", e); }
+}
+
+// ---------------------------------------------------------------------------
+// Toast & Modal
+// ---------------------------------------------------------------------------
+function showToast(msg, type = "info") {
+  const c = document.getElementById("toastContainer");
+  const t = document.createElement("div");
+  t.className = "toast " + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = "0"; t.style.transition = "opacity .3s";
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+function confirmDialog(msg) {
+  return new Promise((resolve) => {
+    document.getElementById("modalMsg").textContent = msg;
+    const overlay = document.getElementById("modalOverlay");
+    overlay.classList.add("show");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+    const okBtn = document.getElementById("modalConfirmBtn");
+    function cleanup(result) {
+      overlay.classList.remove("show");
+      cancelBtn.removeEventListener("click", onCancel);
+      okBtn.removeEventListener("click", onOk);
+      resolve(result);
+    }
+    function onCancel() { cleanup(false); }
+    function onOk() { cleanup(true); }
+    cancelBtn.addEventListener("click", onCancel);
+    okBtn.addEventListener("click", onOk);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Class selector
+// ---------------------------------------------------------------------------
+const classSelect = document.getElementById("classSelect");
+CLASS_LIST.forEach(c => {
+  const opt = document.createElement("option");
+  opt.value = c;
+  opt.textContent = "ม." + c.replace("-", "/");
+  classSelect.appendChild(opt);
+});
+let CLASS_ID = classSelect.value;
+classSelect.addEventListener("change", () => { CLASS_ID = classSelect.value; watchClass(); watchMeta(); });
+
+// ---------------------------------------------------------------------------
+// Firestore refs
+// ---------------------------------------------------------------------------
+function pollRef() { return doc(db, "polls", CLASS_ID); }
+function bankCol() { return collection(db, "questionBank"); }
+function responsesCol(classId) { return collection(db, "polls", classId || CLASS_ID, "responses"); }
+function classMetaRef() { return doc(db, "classMeta", CLASS_ID); }
+
+// ---------------------------------------------------------------------------
+// Meta (topic + expected count)
+// ---------------------------------------------------------------------------
+const topicInput = document.getElementById("topicInput");
+const expectedCountInput = document.getElementById("expectedCountInput");
+let currentMeta = { topic: "", expectedCount: 0 };
+let unsubMeta = null;
+let lastResponseCount = 0;
+
+function watchMeta() {
+  if (unsubMeta) unsubMeta();
+  unsubMeta = onSnapshot(classMetaRef(), (snap) => {
+    currentMeta = snap.exists() ? snap.data() : { topic: "", expectedCount: 0 };
+    if (document.activeElement !== topicInput) topicInput.value = currentMeta.topic || "";
+    if (document.activeElement !== expectedCountInput) expectedCountInput.value = currentMeta.expectedCount || "";
+    updateTopicLine();
+    renderTotalLine(lastResponseCount);
+  }, (err) => console.error(err));
+}
+async function saveMeta() {
+  const topic = topicInput.value.trim();
+  const expectedCount = parseInt(expectedCountInput.value) || 0;
+  try { await setDoc(classMetaRef(), { topic, expectedCount }, { merge: true }); }
+  catch (err) { showToast("บันทึกข้อมูลห้องไม่สำเร็จ: " + err.message, "error"); }
+}
+topicInput.addEventListener("blur", saveMeta);
+expectedCountInput.addEventListener("blur", saveMeta);
+
+function updateTopicLine() {
+  const el = document.getElementById("topicLine");
+  if (currentMeta.topic) {
+    el.innerHTML = `📚 หัวข้อ: <b>${escapeHtml(currentMeta.topic)}</b>`;
+    el.style.display = "block";
+  } else { el.style.display = "none"; }
+}
+function renderTotalLine(count) {
+  lastResponseCount = count;
+  const el = document.getElementById("totalVotes");
+  if (!el) return;
+  if (currentMeta.expectedCount > 0) {
+    const pct = Math.round((count / currentMeta.expectedCount) * 100);
+    el.textContent = `✅ ตอบแล้ว ${count} / ${currentMeta.expectedCount} คน (${pct}%)`;
+  } else {
+    el.textContent = ` รวมทั้งหมด ${count} คน`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const tab = btn.dataset.tab;
+    document.getElementById("createTab").style.display = tab === "create" ? "block" : "none";
+    document.getElementById("bankTab").style.display = tab === "bank" ? "block" : "none";
+    if (tab === "bank") loadBank();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Image upload
+// ---------------------------------------------------------------------------
+let currentImageData = null;
+document.getElementById("pickImageBtn").addEventListener("click", () => document.getElementById("imageInput").click());
+document.getElementById("imageInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    currentImageData = await compressImage(file);
+    document.getElementById("imagePreview").src = currentImageData;
+    document.getElementById("imagePreviewWrap").style.display = "block";
+    document.getElementById("pickImageBtn").style.display = "none";
+    showToast("อัปโหลดรูปภาพสำเร็จ", "success");
+  } catch (err) { showToast("แนบรูปไม่สำเร็จ: " + err.message, "error"); e.target.value = ""; }
+});
+document.getElementById("removeImageBtn").addEventListener("click", () => {
+  currentImageData = null;
+  document.getElementById("imageInput").value = "";
+  document.getElementById("imagePreviewWrap").style.display = "none";
+  document.getElementById("pickImageBtn").style.display = "flex";
+});
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) { reject(new Error("ไฟล์นี้ไม่ใช่รูปภาพ")); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("เปิดไฟล์รูปไม่สำเร็จ"));
+      img.onload = () => {
+        let { width, height } = img;
+        const maxDim = 1100;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        let quality = 0.75;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > 700000 && quality > 0.35) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        if (dataUrl.length > 950000) { reject(new Error("ไฟล์รูปใหญ่เกินไป")); return; }
+        resolve(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Question type switch
+// ---------------------------------------------------------------------------
+let currentType = "choice";
+document.querySelectorAll(".type-opt").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll(".type-opt").forEach(o => o.classList.remove("active"));
+    el.classList.add("active");
+    currentType = el.dataset.type;
+    document.getElementById("choiceFields").style.display = (currentType === "choice" || currentType === "quiz") ? "block" : "none";
+    document.getElementById("ratingFields").style.display = currentType === "rating" ? "block" : "none";
+  });
+});
+
+const ratingPreview = document.getElementById("ratingPreview");
+for (let i = 1; i <= 5; i++) {
+  const star = document.createElement("span");
+  star.className = "rating-star";
+  star.textContent = "⭐";
+  star.dataset.value = i;
+  ratingPreview.appendChild(star);
+}
+
+// ---------------------------------------------------------------------------
+// Option rows
+// ---------------------------------------------------------------------------
+const optionsContainer = document.getElementById("optionsContainer");
+function addOptionRow(value = "", correct = false) {
+  const idx = optionsContainer.children.length;
+  const row = document.createElement("div");
+  row.className = "option-row";
+  const isQuiz = currentType === "quiz";
+  row.innerHTML = `
+    <span class="idx" style="background:${chalkColor(idx)}">${String.fromCharCode(65 + idx)}</span>
+    <input type="text" class="opt-input" value="${value}" placeholder="ตัวเลือก">
+    ${isQuiz ? `<label style="font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;cursor:pointer;">
+      <input type="checkbox" class="correct-check" ${correct ? 'checked' : ''}> ถูก
+    </label>` : ''}
+    <button class="btn-remove" type="button">✕</button>`;
+  row.querySelector(".btn-remove").addEventListener("click", () => {
+    if (optionsContainer.children.length > 2) { row.remove(); restripeSwatches(); }
+    else showToast("ต้องมีอย่างน้อย 2 ตัวเลือก", "error");
+  });
+  optionsContainer.appendChild(row);
+}
+function restripeSwatches() {
+  [...optionsContainer.children].forEach((row, i) => {
+    row.querySelector(".idx").style.background = chalkColor(i);
+    row.querySelector(".idx").textContent = String.fromCharCode(65 + i);
+  });
+}
+addOptionRow(); addOptionRow();
+document.getElementById("addOptionBtn").addEventListener("click", () => addOptionRow());
+
+// ---------------------------------------------------------------------------
+// Form reading
+// ---------------------------------------------------------------------------
+function readForm() {
+  const question = document.getElementById("questionInput").value.trim();
+  if (!question) { showToast("กรุณากรอกคำถาม", "error"); return null; }
+  const base = { question, image: currentImageData || null };
+  if (currentType === "choice") {
+    const options = [...document.querySelectorAll(".opt-input")].map(i => i.value.trim()).filter(v => v);
+    if (options.length < 2) { showToast("ต้องมีอย่างน้อย 2 ตัวเลือก", "error"); return null; }
+    return { ...base, type: "choice", options };
+  }
+  if (currentType === "quiz") {
+    const rows = [...optionsContainer.children];
+    const options = rows.map(r => r.querySelector(".opt-input").value.trim()).filter(v => v);
+    const correctIdx = rows.findIndex(r => r.querySelector(".correct-check")?.checked);
+    if (options.length < 2) { showToast("ต้องมีอย่างน้อย 2 ตัวเลือก", "error"); return null; }
+    if (correctIdx < 0) { showToast("กรุณากำหนดคำตอบที่ถูกต้อง", "error"); return null; }
+    return { ...base, type: "quiz", options, correctIndex: correctIdx };
+  }
+  if (currentType === "rating") {
+    return { ...base, type: "rating", scale: 5 };
+  }
+  return { ...base, type: "text" };
+}
+function clearForm() {
+  document.getElementById("questionInput").value = "";
+  optionsContainer.innerHTML = "";
+  addOptionRow(); addOptionRow();
+  currentImageData = null;
+  document.getElementById("imageInput").value = "";
+  document.getElementById("imagePreviewWrap").style.display = "none";
+  document.getElementById("pickImageBtn").style.display = "flex";
+}
+
+document.getElementById("saveToBankBtn").addEventListener("click", async () => {
+  const data = readForm();
+  if (!data) return;
+  try {
+    await addDoc(bankCol(), { ...data, createdAt: serverTimestamp() });
+    showToast("💾 บันทึกลงคลังแล้ว", "success");
+    clearForm();
+    document.querySelector('.tab-btn[data-tab="bank"]').click();
+  } catch (err) { showToast("บันทึกลงคลังไม่สำเร็จ: " + err.message, "error"); }
+});
+
+document.getElementById("startNowBtn").addEventListener("click", async () => {
+  const data = readForm();
+  if (!data) return;
+  try {
+    await addDoc(bankCol(), { ...data, createdAt: serverTimestamp() });
+    await launchPoll(data);
+    clearForm();
+  } catch (err) { showToast("เริ่มโพลไม่สำเร็จ: " + err.message, "error"); }
+});
+
+// ---------------------------------------------------------------------------
+// Bank
+// ---------------------------------------------------------------------------
+async function loadBank() {
+  const list = document.getElementById("bankList");
+  const countEl = document.getElementById("bankCount");
+  list.innerHTML = `<div class="bank-empty">⏳ กำลังโหลด...</div>`;
+  let snap;
+  try { snap = await getDocs(query(bankCol(), orderBy("createdAt", "desc"))); }
+  catch (err) { list.innerHTML = `<div class="bank-empty">โหลดไม่สำเร็จ: ${escapeHtml(err.message)}</div>`; return; }
+  countEl.textContent = snap.size;
+  if (snap.empty) {
+    list.innerHTML = `<div class="bank-empty">📭 ยังไม่มีคำถามในคลัง — สร้างคำถามแล้วกด "บันทึกลงคลัง"</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  snap.forEach(d => {
+    const q = d.data();
+    const card = document.createElement("div");
+    card.className = "bank-card";
+    const typeLabels = { choice: "เลือกตอบ", text: "พิมพ์ตอบ", rating: "ให้คะแนน", quiz: "แบบทดสอบ" };
+    const badgeClass = { choice: "badge-choice", text: "badge-text", rating: "badge-rating", quiz: "badge-choice" };
+    const optsHtml = q.type === "choice" || q.type === "quiz"
+      ? `<div class="bank-opts">${q.options.map((o, i) => `${q.type === 'quiz' && i === q.correctIndex ? '✅' : '●'} ${escapeHtml(o)}`).join(" &nbsp; ")}</div>`
+      : q.type === "rating" ? `<div class="bank-opts">สเกล 1-5 </div>`
+      : `<div class="bank-opts">💬 พิมพ์ตอบอิสระ</div>`;
+    const thumbHtml = q.image ? `<img class="bank-thumb" src="${q.image}">` : "";
+    card.innerHTML = `
+      <div class="bank-card-main">
+        ${thumbHtml}
+        <div class="bank-card-text">
+          <span class="badge-type ${badgeClass[q.type] || 'badge-choice'}">${typeLabels[q.type] || q.type}</span>
+          <div class="bank-q">${escapeHtml(q.question)}</div>
+          ${optsHtml}
+        </div>
+      </div>
+      <div class="bank-actions">
+        <button class="btn btn-primary" data-act="start">🚀 เริ่มโพล</button>
+        <button class="btn btn-ghost" data-act="del">🗑 ลบ</button>
+      </div>`;
+    card.querySelector('[data-act="start"]').addEventListener("click", () => launchPoll(q));
+    card.querySelector('[data-act="del"]').addEventListener("click", async () => {
+      const ok = await confirmDialog("ลบคำถามนี้ออกจากคลังใช่หรือไม่?");
+      if (!ok) return;
+      try { await deleteDoc(d.ref); showToast("ลบคำถามแล้ว", "success"); loadBank(); }
+      catch (err) { showToast("ลบไม่สำเร็จ: " + err.message, "error"); }
+    });
+    list.appendChild(card);
+  });
+}
+function escapeHtml(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML;}
+
+// ---------------------------------------------------------------------------
+// Launch poll
+// ---------------------------------------------------------------------------
+async function launchPoll(data) {
+  const pollId = Date.now().toString();
+  const payload = {
+    active: true, pollId, question: data.question, type: data.type,
+    image: data.image || null, createdAt: serverTimestamp()
+  };
+  if (data.type === "choice" || data.type === "quiz") {
+    payload.options = data.options;
+    payload.counts = data.options.map(() => 0);
+    if (data.type === "quiz") payload.correctIndex = data.correctIndex;
+  }
+  if (data.type === "rating") {
+    payload.scale = data.scale || 5;
+    payload.counts = Array(data.scale || 5).fill(0);
+  }
+  try {
+    await setDoc(pollRef(), payload);
+  } catch (err) { showToast("เริ่มโพลไม่สำเร็จ: " + err.message, "error"); return; }
+}
+
+// ---------------------------------------------------------------------------
+// View switching
+// ---------------------------------------------------------------------------
+function showLive() {
+  document.getElementById("setupView").style.display = "none";
+  const liveView = document.getElementById("liveView");
+  liveView.style.display = "block";
+}
+function showSetup() {
+  document.body.classList.remove("present-mode");
+  document.getElementById("liveView").style.display = "none";
+  document.getElementById("setupView").style.display = "block";
+}
+
+// ---------------------------------------------------------------------------
+// Poll watcher — แยก "โพลใหม่" vs "โหวตอัปเดต"
+// ---------------------------------------------------------------------------
+let unsubPoll = null, unsubResponses = null;
+let latestPollData = null;
+
+function watchClass() {
+  if (unsubPoll) unsubPoll();
+  if (unsubResponses) unsubResponses();
+  const boundClassId = CLASS_ID;
+  let lastRenderedPollId = null;
+
+  unsubPoll = onSnapshot(pollRef(), (snap) => {
+    if (!snap.exists() || !snap.data().active) return;
+    const data = snap.data();
+    latestPollData = data;
+    document.getElementById("classBadge").textContent = "🎓 ห้อง ม." + boundClassId.replace("-", "/");
+
+    if (data.pollId !== lastRenderedPollId) {
+      lastRenderedPollId = data.pollId;
+      const studentUrl = `${location.origin}${location.pathname.replace('poll-teacher.html','poll-student.html')}?class=${encodeURIComponent(boundClassId)}`;
+      const qrBox = document.getElementById("qrBox");
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, { text: studentUrl, width: 180, height: 180, colorDark: "#1a1f2e", colorLight: "#ffffff" });
+      document.getElementById("linkText").textContent = studentUrl;
+      document.getElementById("statusMsg").textContent = "";
+      document.getElementById("statusMsg").className = "";
+
+      buildBarsStructure(data);
+
+      showLive();
+      watchResponses(data.pollId, data.type, boundClassId);
+    }
+
+    updateLiveContent(data);
+  }, (err) => console.error(err));
+}
+watchClass();
+watchMeta();
+loadBank();
+
+// ---------------------------------------------------------------------------
+// Responses watcher
+// ---------------------------------------------------------------------------
+function watchResponses(pollId, type, classId) {
+  if (unsubResponses) unsubResponses();
+  unsubResponses = onSnapshot(query(responsesCol(classId), where("pollId", "==", pollId)), (snap) => {
+    if (type === "text") {
+      const answers = [];
+      snap.forEach(d => answers.push(d.data().text));
+      renderCloud(answers);
+    } else if (type === "rating") {
+      const counts = Array(5).fill(0);
+      snap.forEach(d => { const v = d.data().value; if (v >= 1 && v <= 5) counts[v-1]++; });
+      updateRatingBars(counts);
+    } else {
+      renderTotalLine(snap.size);
+    }
+  }, (err) => console.error(err));
+}
+
+// ---------------------------------------------------------------------------
+// Bars: แยก "สร้างโครงสร้าง" vs "อัปเดตค่า"
+// ---------------------------------------------------------------------------
+function buildBarsStructure(data) {
+  document.getElementById("liveQuestion").textContent = data.question;
+  const imgEl = document.getElementById("liveImage");
+  if (data.image) { imgEl.src = data.image; imgEl.style.display = "block"; }
+  else { imgEl.style.display = "none"; }
+
+  if (data.type === "choice" || data.type === "quiz") {
+    document.getElementById("barsView").style.display = "block";
+    document.getElementById("cloudView").style.display = "none";
+    buildChoiceBars(data);
+  } else if (data.type === "rating") {
+    document.getElementById("barsView").style.display = "block";
+    document.getElementById("cloudView").style.display = "none";
+    buildRatingBars();
+  } else {
+    document.getElementById("barsView").style.display = "none";
+    document.getElementById("cloudView").style.display = "flex";
+  }
+}
+
+function buildChoiceBars(data) {
+  const el = document.getElementById("barsView");
+  el.innerHTML = "";
+  data.options.forEach((opt, i) => {
+    const isCorrect = data.type === "quiz" && i === data.correctIndex;
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    row.dataset.index = i;
+    row.innerHTML = `
+      <div class="bar-label">
+        <span class="opt-name">${isCorrect ? '✅ ' : ''}${escapeHtml(opt)}</span>
+        <span class="bar-stats">0 คน (0%)</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0%;background:linear-gradient(90deg, ${chalkColor(i)}, ${chalkColor((i+1)%CHALK.length)})">
+          <span class="bar-pct">0%</span>
+        </div>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function buildRatingBars() {
+  const el = document.getElementById("barsView");
+  el.innerHTML = "";
+  const labels = ['😕', '😐', '🙂', '😄', '🤩'];
+  labels.forEach((label, i) => {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    row.dataset.index = i;
+    row.innerHTML = `
+      <div class="bar-label">
+        <span class="opt-name">${label} ${i+1} ดาว</span>
+        <span class="bar-stats">0 คน (0%)</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0%;background:linear-gradient(90deg, #ffd166, #ff6b35)">
+          <span class="bar-pct">0%</span>
+        </div>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function updateLiveContent(data) {
+  if (data.type === "choice" || data.type === "quiz") {
+    updateChoiceBars(data);
+  } else if (data.type === "rating") {
+    updateRatingBars(data.counts || Array(5).fill(0));
+  }
+}
+
+function updateChoiceBars(data) {
+  const total = (data.counts || []).reduce((a, b) => a + b, 0) || 0;
+  const el = document.getElementById("barsView");
+  const rows = el.querySelectorAll(".bar-row");
+  data.options.forEach((_, i) => {
+    const row = rows[i];
+    if (!row) return;
+    const count = data.counts[i] || 0;
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    row.querySelector(".bar-stats").textContent = `${count} คน (${pct}%)`;
+    row.querySelector(".bar-fill").style.width = pct + "%";
+  });
+  renderTotalLine(total);
+}
+
+function updateRatingBars(counts) {
+  const total = counts.reduce((a, b) => a + b, 0) || 0;
+  const el = document.getElementById("barsView");
+  const rows = el.querySelectorAll(".bar-row");
+  counts.forEach((count, i) => {
+    const row = rows[i];
+    if (!row) return;
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    row.querySelector(".bar-stats").textContent = `${count} คน (${pct}%)`;
+    row.querySelector(".bar-fill").style.width = pct + "%";
+  });
+  renderTotalLine(total);
+}
+
+// Word cloud
+let lastCloudKeys = new Set();
+function renderCloud(answers) {
+  const el = document.getElementById("cloudView");
+  if (!answers.length) {
+    el.innerHTML = `<div class="cloud-empty">⏳ กำลังรอคำตอบจากนักเรียน...</div>`;
+    lastCloudKeys = new Set();
+    renderTotalLine(0);
+    return;
+  }
+  const freq = {};
+  answers.forEach(a => { const key = (a || "").trim(); if (key) freq[key] = (freq[key] || 0) + 1; });
+  const entries = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  const maxCount = entries.length ? entries[0][1] : 1;
+
+  const currentKeys = new Set(entries.map(e => e[0]));
+  el.innerHTML = "";
+  entries.forEach(([text, count], i) => {
+    const scale = 0.8 + (count / maxCount) * 1.4;
+    const tag = document.createElement("div");
+    tag.className = "tag" + (lastCloudKeys.has(text) ? "" : " new");
+    tag.style.fontSize = scale + "em";
+    tag.style.color = chalkColor(i);
+    tag.textContent = count > 1 ? `${text} ×${count}` : text;
+    el.appendChild(tag);
+  });
+  lastCloudKeys = currentKeys;
+  renderTotalLine(answers.length);
+}
+
+// ---------------------------------------------------------------------------
+// Timer
+// ---------------------------------------------------------------------------
+let timerInterval = null;
+let timerSeconds = 30;
+let timerRunning = false;
+document.getElementById("toggleTimerBtn").addEventListener("click", () => {
+  const wrap = document.getElementById("timerWrap");
+  wrap.style.display = wrap.style.display === "none" ? "flex" : "none";
+});
+document.getElementById("timerStartBtn").addEventListener("click", () => {
+  if (timerRunning) return;
+  timerRunning = true;
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    updateTimerDisplay();
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      showToast("⏰ หมดเวลา!", "warning");
+    }
+  }, 1000);
+});
+document.getElementById("timerPauseBtn").addEventListener("click", () => {
+  clearInterval(timerInterval);
+  timerRunning = false;
+});
+document.getElementById("timerResetBtn").addEventListener("click", () => {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 30;
+  updateTimerDisplay();
+});
+function updateTimerDisplay() {
+  const display = document.getElementById("timerDisplay");
+  const circle = document.getElementById("timerCircle");
+  const mins = Math.floor(timerSeconds / 60);
+  const secs = timerSeconds % 60;
+  display.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  const circumference = 2 * Math.PI * 34;
+  const progress = timerSeconds / 30;
+  circle.style.strokeDashoffset = circumference * (1 - Math.max(0, progress));
+  if (timerSeconds <= 10) display.classList.add("urgent");
+  else display.classList.remove("urgent");
+}
+updateTimerDisplay();
+
+// ---------------------------------------------------------------------------
+// QR, Fullscreen, Actions
+// ---------------------------------------------------------------------------
+document.getElementById("toggleQrBtn").addEventListener("click", () => {
+  const row = document.getElementById("qrRow");
+  row.style.display = row.style.display === "none" ? "flex" : "none";
+});
+document.getElementById("fullscreenBtn").addEventListener("click", () => {
+  document.body.classList.add("present-mode");
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+});
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) document.body.classList.remove("present-mode");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.body.classList.contains("present-mode") && !document.fullscreenElement) {
+    document.body.classList.remove("present-mode");
+  }
+});
+
+document.getElementById("newPollBtn").addEventListener("click", async () => {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.body.classList.remove("present-mode");
+  if (latestPollData && latestPollData.active) {
+    try { await updateDoc(pollRef(), { active: false }); }
+    catch (err) { showToast("ปิดโพลไม่สำเร็จ: " + err.message, "error"); }
+  }
+  showSetup();
+});
+
+// ---------------------------------------------------------------------------
+//  ปิดโพล & บันทึกผลลง Sheet (V2 — ส่งชื่อ + คำตอบรายคน)
+// ---------------------------------------------------------------------------
+document.getElementById("closePollBtn").addEventListener("click", async () => {
+  if (!latestPollData) return;
+  const ok = await confirmDialog("ปิดโพลและบันทึกผลลง Google Sheet ใช่หรือไม่?");
+  if (!ok) return;
+  try { await updateDoc(pollRef(), { active: false }); }
+  catch (err) { showToast("ปิดโพลไม่สำเร็จ: " + err.message, "error"); return; }
+
+  const statusEl = document.getElementById("statusMsg");
+  statusEl.textContent = "⏳ กำลังบันทึก...";
+  statusEl.className = "status-msg";
+
+  try {
+    // 1) ดึงคำตอบ "รายคน" (พร้อมชื่อนักเรียน) ออกจาก Firestore
+    const snap = await getDocs(query(responsesCol(), where("pollId", "==", latestPollData.pollId)));
+    const responses = [];
+    const freq = {};
+    snap.forEach(d => {
+      const r = d.data();
+      let answer = "";
+      if (latestPollData.type === "choice" || latestPollData.type === "quiz") {
+        answer = (latestPollData.options || [])[r.optionIndex] || "(ไม่ระบุตัวเลือก)";
+      } else if (latestPollData.type === "rating") {
+        answer = (r.value || 0) + " ดาว";
+      } else {
+        answer = (r.text || "").trim();
+      }
+      responses.push({ name: (r.studentName || "").trim() || "(ไม่ระบุชื่อ)", answer });
+      if (answer) freq[answer] = (freq[answer] || 0) + 1;
+    });
+
+    // 2) สรุปยอดรวม — ใช้คีย์ "answer" ตัวเดียวให้ตรงกับ Apps Script
+    let results;
+    if (latestPollData.type === "choice" || latestPollData.type === "quiz") {
+      results = latestPollData.options.map((opt, i) => ({ answer: opt, count: latestPollData.counts[i] || 0 }));
+    } else if (latestPollData.type === "rating") {
+      results = (latestPollData.counts || []).map((count, i) => ({ answer: (i + 1) + " ดาว", count }));
+    } else {
+      results = Object.entries(freq).map(([answer, count]) => ({ answer, count }));
+    }
+
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "savePollResultV2",
+        payload: {
+          classId: "ม." + CLASS_ID.replace("-", "/"),
+          question: latestPollData.question,
+          type: latestPollData.type,
+          topic: currentMeta.topic || "",
+          results,
+          responses
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    statusEl.textContent = `✅ บันทึกลง Sheet สำเร็จ (${data.saved || 0} คำตอบ)`;
+    statusEl.className = "status-msg status-ok";
+  } catch (err) {
+    statusEl.textContent = "❌ บันทึกไม่สำเร็จ: " + err.message;
+    statusEl.className = "status-msg status-err";
+  }
+});
+</script>
+</body>
+</html>

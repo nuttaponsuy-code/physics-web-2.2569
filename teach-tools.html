@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>เครื่องมืออำนวยการสอน — ฟิสิกส์</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==== ไฟล์นี้เป็นเอกสารอิสระ (โหลดผ่าน <iframe> จาก index.html) ====
+   จึงต้องมี CSS/JS พื้นฐานของตัวเองครบชุด ไม่ได้สืบทอดสไตล์จากหน้าแม่
+   ค่าตัวแปรสี/ธีมด้านล่างซิงก์ให้ตรงกับ index.html เพื่อให้หน้าตากลมกลืนกัน */
+:root {
+  --wallpaper: #000000;
+  --g0: rgba(20,20,22,.62); --g1: rgba(36,36,40,.66); --gb: rgba(255,255,255,.09); --gbs: rgba(255,255,255,.16);
+  --t1: #f5f5f7; --t2: rgba(235,235,245,.82); --t3: rgba(235,235,245,.58); --t4: rgba(235,235,245,.38);
+  --ac: #0a84ff; --ac-h: #409cff; --ac-bg: rgba(10,132,255,.18);
+  --ok: #30d158; --ok-b: rgba(48,209,88,.16); --ok-bd: rgba(48,209,88,.35);
+  --er: #ff453a; --er-b: rgba(255,69,58,.16); --er-bd: rgba(255,69,58,.35);
+  --wn: #ff9f0a; --wn-b: rgba(255,159,10,.16); --wn-bd: rgba(255,159,10,.35);
+  --cy: #64d2ff; --cy-d: rgba(100,210,255,.18);
+  --in-b: rgba(120,120,128,.16); --in-bd: rgba(120,120,128,.3);
+  --r-lg: 26px; --r-md: 18px; --r-sm: 12px; --r-pill: 980px;
+  --sh-1: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.28);
+  --sh-2: 0 20px 50px rgba(0,0,0,.45);
+  --spring: cubic-bezier(.22,1,.36,1);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Kanit", "Sukhumvit Set", sans-serif;
+}
+[data-theme="light"] {
+  --wallpaper: #eef1f6;
+  --g0: rgba(255,255,255,.55); --g1: rgba(255,255,255,.72); --gb: rgba(60,60,67,.12); --gbs: rgba(60,60,67,.2);
+  --t1: #1c1c1e; --t2: rgba(60,60,67,.85); --t3: rgba(60,60,67,.6); --t4: rgba(60,60,67,.4);
+  --ac: #007aff; --ac-h: #0062cc; --ac-bg: rgba(0,122,255,.12);
+  --ok: #34c759; --ok-b: rgba(52,199,89,.14); --ok-bd: rgba(52,199,89,.35);
+  --er: #ff3b30; --er-b: rgba(255,59,48,.12); --er-bd: rgba(255,59,48,.32);
+  --wn: #ff9500; --wn-b: rgba(255,149,0,.14); --wn-bd: rgba(255,149,0,.32);
+  --cy: #32ade6; --cy-d: rgba(50,173,230,.16);
+  --in-b: rgba(118,118,128,.1); --in-bd: rgba(118,118,128,.22);
+  --sh-1: 0 1px 2px rgba(60,60,67,.08), 0 8px 24px rgba(60,60,67,.10);
+  --sh-2: 0 20px 50px rgba(60,60,67,.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-ui); -webkit-tap-highlight-color: transparent; }
+body { background: var(--wallpaper); color: var(--t1); line-height: 1.5; font-size: 15px; -webkit-font-smoothing: antialiased; padding: 14px; min-height: 100vh; }
+.lbl { display: block; font-size: .84rem; color: var(--t2); font-weight: 600; margin-bottom: 6px; }
+.fc { width: 100%; background: var(--in-b); border: 1px solid var(--in-bd); color: var(--t1); padding: 11px 14px; border-radius: var(--r-sm); outline: none; font-size: .95rem; }
+.fc:focus { border-color: var(--ac); box-shadow: 0 0 0 4px var(--ac-bg); }
+select.fc { appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23888890" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 20px; padding-right: 34px; }
+.btn { border: none; border-radius: var(--r-pill); padding: 9px 18px; font-size: .92rem; font-weight: 600; cursor: pointer; transition: transform .28s var(--spring), background .15s, opacity .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn:active { transform: scale(.94); }
+.btn-p { background: var(--ac); color: #fff; box-shadow: 0 6px 16px var(--ac-bg); }
+.btn-o { background: var(--in-b); border: 1px solid var(--ac); color: var(--ac); }
+.btn-g { background: var(--in-b); border: 1px solid var(--in-bd); color: var(--t1); }
+.btn-d { background: var(--er-b); color: var(--er); }
+.btn-ok { background: var(--ok-b); color: var(--ok); }
+.btn-sm { padding: 6px 13px; font-size: .8rem; }
+.btn-lg { padding: 14px 20px; font-size: 1rem; width: 100%; }
+.tg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.tg-c { background: var(--in-b); border: 1px solid var(--in-bd); padding: 16px; border-radius: var(--r-md); text-align: center; cursor: pointer; transition: .3s var(--spring); display: flex; flex-direction: column; align-items: center; }
+.tg-c:hover { border-color: var(--ac); background: var(--ac-bg); transform: translateY(-2px); }
+.tg-i { width: 44px; height: 44px; background: var(--g1); border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: var(--ac); box-shadow: var(--sh-1); }
+.tg-panel { background: var(--g0); border: 1px solid var(--gb); border-radius: 12px; padding: 16px; }
+.timer-d { font-size: 3.5rem; font-weight: 700; color: var(--t1); text-align: center; font-variant-numeric: tabular-nums; line-height: 1; margin: 20px 0; letter-spacing: -0.02em; }
+.noise-lv { height: 24px; background: var(--in-b); border-radius: 12px; overflow: hidden; border: 1px solid var(--gb); margin-top: 10px; }
+.noise-b { height: 100%; width: 0%; transition: width .1s, background .2s; }
+#randDisp { text-align: center; font-size: 1.4rem; font-weight: 700; color: var(--cy); padding: 20px; margin: 10px 0; background: var(--in-b); border-radius: 12px; border: 1px dashed var(--cy); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+.fm-grid { display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+.fm-item { padding: 10px; background: var(--g1); border: 1px solid var(--gb); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.fm-sym { font-family: monospace; font-weight: 700; color: var(--cy); font-size: .95rem; }
+.tmr-fs { position: fixed; inset: 0; background: #000; color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 400; }
+.tmr-fs.open { display: flex; }
+.tmr-fs-lbl { font-size: 1rem; letter-spacing: .1em; color: rgba(255,255,255,.5); font-weight: 600; margin-bottom: 10px; text-transform: uppercase; }
+.tmr-fs-num { font-size: 20vw; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
+.tmr-fs-exit { position: absolute; top: 20px; right: 20px; }
+.tmr-fs-ctl { display: flex; gap: 12px; margin-top: 34px; }
+.wl-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--ok); background: var(--ok-b); border: 1px solid var(--ok-bd); padding: 3px 9px; border-radius: var(--r-pill); font-weight: 700; margin-top: 10px; }
+.tb { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast { background: var(--g1); border: 1px solid var(--gb); color: var(--t1); padding: 11px 20px; border-radius: var(--r-pill); font-weight: 600; font-size: .88rem; box-shadow: var(--sh-2); }
+.toast.er { box-shadow: var(--sh-2), inset 0 0 0 1px var(--er-bd); }
+.toast.ok { box-shadow: var(--sh-2), inset 0 0 0 1px var(--ok-bd); }
+.toast.wn { box-shadow: var(--sh-2), inset 0 0 0 1px var(--wn-bd); }
+.not-ready { text-align: center; padding: 60px 20px; color: var(--t3); }
+.msg-row { background: var(--in-b); border: 1px solid var(--in-bd); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.rand-reveal { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px; background: var(--in-b); border-radius: 16px; border: 1px dashed var(--cy); margin: 10px 0; }
+.rand-reveal-ph { width: 92px; height: 92px; border-radius: 50%; background: var(--g1); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 2rem; box-shadow: var(--sh-1); border: 3px solid var(--in-bd); color: var(--t2); font-weight: 700; }
+.rand-reveal-ph.final { border-color: var(--cy); box-shadow: 0 0 0 5px var(--cy-d); }
+.rand-reveal-ph img { width: 100%; height: 100%; object-fit: cover; }
+.rand-reveal-name { font-size: 1.25rem; font-weight: 700; color: var(--t1); text-align: center; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
+.photo-item { cursor: pointer; }
+.photo-thumb { width: 100%; aspect-ratio: 1/1; border-radius: 50%; object-fit: cover; background: var(--in-b); border: 2px solid var(--in-bd); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--t3); font-size: 1rem; }
+.mood-cell { display: flex; align-items: center; justify-content: center; background: var(--in-b); border: 1.5px solid var(--in-bd); border-radius: 12px; padding: 12px 4px; }
+</style>
+</head>
+<body>
+
+<div class="tb" id="toastBox"></div>
+
+<!-- FULLSCREEN TIMER OVERLAY -->
+<div class="tmr-fs" id="tmrFS">
+  <button class="btn btn-g tmr-fs-exit" id="tmrFSExitBtn">ออกจากเต็มจอ ✕</button>
+  <div class="tmr-fs-lbl">เวลาที่เหลือ</div>
+  <div class="tmr-fs-num" id="tmrFSNum">5:00</div>
+  <div class="tmr-fs-ctl">
+    <button class="btn btn-ok btn-lg" onclick="App.tmrStart()">เริ่ม</button>
+    <button class="btn btn-g btn-lg" onclick="App.tmrPause()">หยุด</button>
+    <button class="btn btn-d btn-lg" onclick="App.tmrReset()">รีเซต</button>
+  </div>
+  <div class="wl-badge" id="wlBadge" style="display:none;">🔒 หน้าจอจะไม่ดับระหว่างจับเวลา</div>
+</div>
+
+<div id="notReady" class="not-ready">กำลังเชื่อมต่อกับหน้าหลัก...</div>
+
+<div id="tgMain" style="display:none;">
+  <div class="tg-grid">
+    <div class="tg-c" onclick="App.tool('rand')"><div class="tg-i" data-ico="dice"></div><span style="font-weight:600;font-size:.85rem;">สุ่มชื่อ</span></div>
+    <div class="tg-c" onclick="App.tool('timer')"><div class="tg-i" data-ico="timer"></div><span style="font-weight:600;font-size:.85rem;">จับเวลา</span></div>
+    <div class="tg-c" onclick="App.tool('noise')"><div class="tg-i" data-ico="sound"></div><span style="font-weight:600;font-size:.85rem;">วัดเสียง</span></div>
+    <div class="tg-c" onclick="App.tool('group')"><div class="tg-i" data-ico="group"></div><span style="font-weight:600;font-size:.85rem;">จัดกลุ่ม</span></div>
+    <div class="tg-c" onclick="App.tool('poll')"><div class="tg-i" data-ico="poll"></div><span style="font-weight:600;font-size:.85rem;">โหวตเข้าใจ</span></div>
+    <div class="tg-c" onclick="App.tool('formula')"><div class="tg-i" data-ico="formula"></div><span style="font-weight:600;font-size:.85rem;">สูตรลัด</span></div>
+    <div class="tg-c" onclick="App.tool('msgboard')"><div class="tg-i" data-ico="chat"></div><span style="font-weight:600;font-size:.85rem;">กระดานข้อความ</span></div>
+    <div class="tg-c" onclick="App.tool('mood')"><div class="tg-i" data-ico="mood"></div><span style="font-weight:600;font-size:.85rem;">เช็คอารมณ์</span></div>
+  </div>
+</div>
+<button id="tgBack" class="btn btn-g btn-sm" style="display:none;margin-bottom:14px;" onclick="App.backTool()">← กลับเมนูเครื่องมือ</button>
+<div id="tgPanel" class="tg-panel" style="display:none;"></div>
+<input type="file" id="photoFileIn" accept="image/*" style="display:none;">
+
+<script>
+function $(id){return document.getElementById(id);}
+var IcoPaths={
+  dice:'<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v5l3 2"/><path d="M10 2h4"/>',
+  formula:'<path d="M4 7h6M7 4v6M14 7l6 10M20 7L14 17"/>',
+  sound:'<path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M16 9a4 4 0 0 1 0 6M18 7a7 7 0 0 1 0 10"/>',
+  group:'<circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M4 19c0-3 2.5-5 5-5s5 2 5 5M13 19c0-2 1.5-4 3.5-4"/>',
+  poll:'<path d="M4 19V5M4 19h4M4 13h7M4 7h10"/><path d="M16 16l3-3-3-3"/>',
+  chat:'<path d="M4 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-5 4v-4H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
+  mood:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>'
+};
+var Ico={
+  svg:function(n){var p=IcoPaths[n];return p?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>':'';},
+  bindData:function(root){(root||document).querySelectorAll('[data-ico]').forEach(function(el){el.innerHTML=Ico.svg(el.getAttribute('data-ico'));});}
+};
+var UI={
+  h:(id,h)=>{const e=$(id);if(e)e.innerHTML=h;},
+  v:id=>{const e=$(id);return e?e.value:'';},
+  sv:(id,v)=>{const e=$(id);if(e)e.value=v;},
+  toast:(msg,tp='ok')=>{
+    const t=document.createElement('div');t.className=`toast ${tp}`;t.textContent=msg;
+    $('toastBox').appendChild(t);
+    setTimeout(()=>{t.remove();},tp==='er'?6000:3000);
+  }
+};
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ===== สถานะ: รับข้อมูลจากหน้าแม่ (index.html) ผ่าน postMessage ===== */
+var S={
+  ready:false, tab:'', students:{}, formulas:{}, apiUrl:'', photos:[],
+  tmrIv:null,tmrOn:false,tmrSec:0,tmrInit:false,tmrDown:true,tmrFS:false,wakeLock:null,
+  noStream:null,noAnim:null,randIv:null,poll:{y:0,m:0,n:0},
+  msgIv:null,msgCache:[],moodIv:null,pendingPhotoTarget:null
+};
+
+const API={
+  call:async(a,p)=>{
+    if(!S.apiUrl)return {error:'ยังไม่ได้รับ API URL จากหน้าหลัก'};
+    try{
+      const res=await fetch(S.apiUrl,{method:'POST',body:JSON.stringify({action:a,payload:p||{}})});
+      const j=await res.json();
+      return j||{_n:true};
+    }catch(e){return {error:'เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว'};}
+  }
+};
+
+/* รับข้อความจากหน้าแม่ */
+window.addEventListener('message',function(ev){
+  const d=ev.data||{};
+  if(d.type==='ttInit'){
+    S.tab=d.subject||Object.keys(d.students||{})[0]||'';
+    S.students=d.students||{};
+    S.learningResources=d.learningResources||{};
+    S.formulas=d.formulas||{};
+    S.apiUrl=d.apiUrl||'';
+    S.photos=d.photos||[];
+    document.documentElement.setAttribute('data-theme',d.theme||'dark');
+    S.ready=true;
+    $('notReady').style.display='none';
+    $('tgMain').style.display='block';
+    Ico.bindData($('tgMain'));
+  }else if(d.type==='ttSubjectChange'){
+    S.tab=d.subject||S.tab;
+    // ถ้าแผงเครื่องมือที่เปิดอยู่มีตัวเลือกห้องเรียน ให้รีเฟรชรายการห้องให้ตรงวิชาใหม่
+    const panel=$('tgPanel');
+    if(panel&&panel.style.display!=='none'&&panel.dataset.tool){App.tool(panel.dataset.tool);}
+  }else if(d.type==='ttTheme'){
+    document.documentElement.setAttribute('data-theme',d.theme||'dark');
+  }else if(d.type==='ttStop'){
+    App.backTool();
+  }
+});
+// แจ้งหน้าแม่ว่าพร้อมรับข้อมูลแล้ว — ส่งซ้ำเผื่อกรณี parent ยังไม่ทัน attach listener (race condition ตอนโหลดหน้า)
+(function(){
+  let tries=0;
+  const iv=setInterval(()=>{
+    if(S.ready||tries>=20){clearInterval(iv);return;}
+    window.parent.postMessage({type:'ttReady'},'*');
+    tries++;
+  },300);
+  window.parent.postMessage({type:'ttReady'},'*');
+})();
+
+var App={
+  tool:t=>{
+    $('tgMain').style.display='none';$('tgBack').style.display='block';
+    const p=$('tgPanel');p.style.display='block';p.dataset.tool=t;
+    const rooms=Object.keys(S.students[S.tab]||{});
+    if(t==='rand'){
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">สุ่มตัวแทนทำโจทย์</div><select class="fc" id="randRm" style="margin-bottom:10px;font-weight:700;" onchange="App.renderPhotoGrid()">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><div id="randReveal" class="rand-reveal"><div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div></div><button class="btn btn-p btn-lg" style="margin-top:10px;" onclick="App.doRand()">สุ่มเลย</button><div class="lbl" style="margin:18px 0 8px;">📷 จัดการรูปนักเรียน (แตะเพื่ออัปโหลด/เปลี่ยนรูป)</div><div id="photoGrid" class="photo-grid"></div>';
+      App.renderPhotoGrid();
+    }else if(t==='timer'){
+      S.tmrInit=false;S.tmrOn=false;clearInterval(S.tmrIv);
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">จับเวลา</div><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><input type="number" class="fc" id="tmrIn" value="5" min="1" max="90" style="width:70px;text-align:center;"><span style="color:var(--t3);font-size:.82rem;">นาที</span><select class="fc" id="tmrMd" style="flex:1;"><option value="down">นับถอยหลัง</option><option value="up">นับขึ้น</option></select></div><div class="timer-d" id="tmrDisp">5:00</div><div style="display:flex;gap:8px;"><button class="btn btn-ok" style="flex:1;" onclick="App.tmrStart()">เริ่ม</button><button class="btn btn-g" style="flex:1;" onclick="App.tmrPause()">หยุด</button><button class="btn btn-d" style="flex:1;" onclick="App.tmrReset()">รีเซต</button></div><button class="btn btn-o btn-lg" style="margin-top:10px;" onclick="App.tmrFullscreen()">⛶ เต็มจอ (กันจอดับ)</button><div class="wl-badge" id="wlBadgeSm" style="display:none;">🔒 หน้าจอจะไม่ดับระหว่างจับเวลา</div>';
+    }else if(t==='formula'){
+      const list=(S.learningResources&&S.learningResources[S.tab])?S.learningResources[S.tab]:(S.formulas[S.tab]||[]);
+      p.innerHTML='<div class="lbl" style="margin-bottom:8px;">สื่อ & เอกสารการเรียนรู้ '+S.tab+'</div><div class="fm-grid">'+list.map(f=>{
+        const title=_esc(f.title||f.s||'');
+        const desc=_esc(f.desc||f.d||'');
+        const url=f.url?_esc(f.url):'';
+        return '<div class="fm-item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><span class="fm-sym">'+title+'</span><span style="font-size:.74rem;color:var(--t3);display:block;">'+desc+'</span></div>'+(url?'<a href="'+url+'" target="_blank" class="btn btn-p btn-sm" style="text-decoration:none;flex-shrink:0;">เปิดดู 🔗</a>':'')+'</div>';
+      }).join('')+'</div>';
+    }else if(t==='noise'){
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">วัดระดับเสียงห้องเรียน</div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><div style="text-align:center;font-size:1.4rem;font-weight:700;color:var(--cy);margin:8px 0;" id="noiseLbl">-- %</div><div id="noiseSt" style="text-align:center;font-size:.78rem;color:var(--t3);margin-bottom:10px;">กด เริ่มวัด เพื่อเปิดไมโครโฟน</div><div style="display:flex;gap:9px;"><button class="btn btn-ok" style="flex:1;" onclick="App.startNoise()">เริ่มวัด</button><button class="btn btn-d" style="flex:1;" onclick="App.stopNoise()">หยุด</button></div>';
+    }else if(t==='group'){
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">แบ่งกลุ่มนักเรียน</div><div style="display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap;"><select class="fc" id="grpRm" style="flex:1;min-width:120px;">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="fc" id="grpSz" value="4" min="2" max="10" style="width:60px;text-align:center;"><span style="color:var(--t3);font-size:.8rem;">คน/กลุ่ม</span></div></div><button class="btn btn-p" style="width:100%;margin-bottom:10px;" onclick="App.doGroup()">สุ่มจัดกลุ่ม</button><div id="grpRes"></div>';
+    }else if(t==='poll'){
+      S.poll={y:0,m:0,n:0};
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">โหวตความเข้าใจ</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px;"><div style="text-align:center;cursor:pointer;padding:14px;background:var(--ok-b);border:1.5px solid var(--ok-bd);border-radius:12px;" onclick="App.vote(\'y\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--ok);">Y</div><div style="font-weight:700;color:var(--ok);margin-top:5px;" id="py">0</div><div style="font-size:.72rem;color:var(--t3);">เข้าใจ</div></div><div style="text-align:center;cursor:pointer;padding:14px;background:var(--wn-b);border:1.5px solid var(--wn-bd);border-radius:12px;" onclick="App.vote(\'m\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--wn);">?</div><div style="font-weight:700;color:var(--wn);margin-top:5px;" id="pm">0</div><div style="font-size:.72rem;color:var(--t3);">ยังงง</div></div><div style="text-align:center;cursor:pointer;padding:14px;background:var(--er-b);border:1.5px solid var(--er-bd);border-radius:12px;" onclick="App.vote(\'n\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--er);">N</div><div style="font-weight:700;color:var(--er);margin-top:5px;" id="pn">0</div><div style="font-size:.72rem;color:var(--t3);">ไม่เข้าใจ</div></div></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:.8rem;color:var(--t3);">รวม:</span><span id="ptot" style="font-weight:700;color:var(--cy);">0</span><span style="font-size:.8rem;color:var(--t3);">โหวต</span></div><button class="btn btn-g btn-sm" onclick="App.resetPoll()">รีเซตผล</button>';
+    }else if(t==='msgboard'){
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">กระดานข้อความสด</div><div style="display:flex;gap:8px;margin-bottom:10px;"><select class="fc" id="msgRm" style="flex:1;" onchange="App.refreshMsgBoard(true)">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><button class="btn btn-d btn-sm" onclick="App.clearMsgBoard()">ลบทั้งหมด</button></div><div id="msgList" style="max-height:380px;overflow-y:auto;"></div><div style="font-size:.7rem;color:var(--t4);margin-top:8px;text-align:center;">🔄 อัปเดตอัตโนมัติทุก 4 วินาที ขณะเปิดหน้านี้ค้างไว้</div>';
+      App.refreshMsgBoard(true);
+      clearInterval(S.msgIv);
+      S.msgIv=setInterval(()=>App.refreshMsgBoard(false),4000);
+    }else if(t==='mood'){
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">เช็คอารมณ์ห้องเรียน</div><div style="display:flex;gap:8px;margin-bottom:14px;"><select class="fc" id="moodRm" style="flex:1;" onchange="App.refreshMoodBoard(true)">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><button class="btn btn-d btn-sm" onclick="App.clearMoodBoard()">เริ่มรอบใหม่</button></div><div id="moodGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;"></div><div style="font-size:.7rem;color:var(--t4);margin-top:10px;text-align:center;">🔄 อัปเดตอัตโนมัติทุก 4 วินาที • รวม <span id="moodTotal">0</span> คนตอบ</div>';
+      App.refreshMoodBoard(true);
+      clearInterval(S.moodIv);
+      S.moodIv=setInterval(()=>App.refreshMoodBoard(false),4000);
+    }
+  },
+  backTool:()=>{
+    App.stopNoise();App.tmrExitFS();clearInterval(S.tmrIv);S.tmrOn=false;App.releaseWakeLock();
+    clearInterval(S.msgIv);S.msgIv=null;
+    clearInterval(S.moodIv);S.moodIv=null;
+    clearInterval(S.randIv);
+    $('tgMain').style.display='block';const p=$('tgPanel');p.style.display='none';p.dataset.tool='';$('tgBack').style.display='none';UI.h('tgPanel','');
+  },
+  doRand:()=>{
+    const room=UI.v('randRm');
+    const list=S.students[S.tab][room];if(!list)return;
+    clearInterval(S.randIv);let ticks=0;
+    S.randIv=setInterval(()=>{
+      const nm=list[Math.floor(Math.random()*list.length)];
+      App._renderReveal(nm,room,false);
+      if(++ticks>28){clearInterval(S.randIv);App._renderReveal(nm,room,true);}
+    },55);
+  },
+  _renderReveal:(name,room,final)=>{
+    const rev=$('randReveal');if(!rev)return;
+    const url=App.photoFor(S.tab,room,name);
+    const initial=(name||'?').replace(/^(นาย|นางสาว|เด็กชาย|เด็กหญิง)/,'').charAt(0)||'?';
+    rev.innerHTML='<div class="rand-reveal-ph'+(final?' final':'')+'">'+(url?'<img src="'+url+'">':'<span>'+initial+'</span>')+'</div>'
+      +'<div class="rand-reveal-name">'+(final?'>> ':'')+_esc(name)+(final?' <<':'')+'</div>';
+  },
+  photoFor:(subject,room,student)=>{
+    const p=(S.photos||[]).find(x=>x.subject===subject&&x.room===room&&x.student===student);
+    return p?p.photoUrl:null;
+  },
+  renderPhotoGrid:()=>{
+    const room=UI.v('randRm');const grid=$('photoGrid');if(!grid||!room)return;
+    const stus=S.students[S.tab][room]||[];
+    grid.innerHTML=stus.map(stu=>{
+      const url=App.photoFor(S.tab,room,stu);
+      const initial=(stu||'?').replace(/^(นาย|นางสาว|เด็กชาย|เด็กหญิง)/,'').charAt(0)||'?';
+      return '<div class="photo-item" onclick="App.pickPhoto(\''+room+'\',\''+stu.replace(/'/g,"\\'")+'\')" title="'+_esc(stu)+'">'
+        +(url?'<img src="'+url+'" class="photo-thumb">':'<div class="photo-thumb">'+initial+'</div>')
+        +'</div>';
+    }).join('');
+  },
+  pickPhoto:(room,student)=>{
+    S.pendingPhotoTarget={room,student};
+    $('photoFileIn').click();
+  },
+  refreshMoodBoard:async(showToastOnFail)=>{
+    const rm=UI.v('moodRm');if(!rm)return;
+    const r=await API.call('getMoodStats',{subject:S.tab,room:rm});
+    const grid=$('moodGrid');if(!grid)return;
+    if(!r||r.error){if(showToastOnFail)UI.toast('โหลดข้อมูลไม่สำเร็จ','er');return;}
+    const c=r.counts||{};
+    const items=[
+      {k:'sleepy',e:'😴',l:'ง่วง',clr:'var(--t3)'},
+      {k:'happy',e:'😊',l:'สนุก',clr:'var(--ok)'},
+      {k:'confused',e:'😕',l:'งง',clr:'var(--wn)'},
+      {k:'stressed',e:'😣',l:'เครียด',clr:'var(--er)'},
+      {k:'fired',e:'🔥',l:'มีไฟ',clr:'var(--cy)'}
+    ];
+    grid.innerHTML=items.map(m=>'<div class="mood-cell"><div style="text-align:center;"><div style="font-size:1.6rem;">'+m.e+'</div><div style="font-size:1.1rem;font-weight:700;color:'+m.clr+';">'+(c[m.k]||0)+'</div><div style="font-size:.68rem;color:var(--t3);">'+m.l+'</div></div></div>').join('');
+    UI.h('moodTotal',r.total||0);
+  },
+  clearMoodBoard:async()=>{
+    const rm=UI.v('moodRm');if(!rm)return;
+    if(!confirm('ยืนยันเริ่มรอบใหม่ (ลบผลเช็คอารมณ์ทั้งหมดในห้อง '+rm+')?'))return;
+    const r=await API.call('clearMood',{subject:S.tab,room:rm});
+    if(r&&r.success){UI.toast('เริ่มรอบใหม่แล้ว','ok');App.refreshMoodBoard(false);}
+    else UI.toast((r&&r.error)||'ล้มเหลว','er');
+  },
+  requestWakeLock:async()=>{
+    try{
+      if('wakeLock' in navigator){
+        S.wakeLock=await navigator.wakeLock.request('screen');
+        S.wakeLock.addEventListener('release',()=>{S.wakeLock=null;App._wlUI(false);});
+        App._wlUI(true);
+      }
+    }catch(e){console.warn('wakeLock',e);}
+  },
+  releaseWakeLock:()=>{ if(S.wakeLock){try{S.wakeLock.release();}catch(e){}S.wakeLock=null;} App._wlUI(false); },
+  _wlUI:on=>{ const b1=$('wlBadge'),b2=$('wlBadgeSm'); if(b1)b1.style.display=on?'inline-flex':'none'; if(b2)b2.style.display=on?'inline-flex':'none'; },
+  tmrFullscreen:async()=>{
+    const el=$('tmrFS');if(!el)return;
+    el.classList.add('open');S.tmrFS=true;
+    try{ if(el.requestFullscreen)await el.requestFullscreen(); else if(el.webkitRequestFullscreen)await el.webkitRequestFullscreen(); }catch(e){/* บาง browser ไม่รองรับเต็มจอในนี้ - ใช้โหมดคลุมจอแทนได้เลย */}
+    App.tmrSyncFS();
+    if(!S.tmrOn)App.tmrStart(); else App.requestWakeLock();
+  },
+  tmrExitFS:()=>{
+    const el=$('tmrFS');if(el)el.classList.remove('open');S.tmrFS=false;
+    try{ if(document.fullscreenElement)document.exitFullscreen(); else if(document.webkitFullscreenElement)document.webkitExitFullscreen(); }catch(e){}
+  },
+  tmrSyncFS:()=>{ const src=$('tmrDisp'),dst=$('tmrFSNum'); if(dst)dst.textContent=src?src.textContent:App._fmtSec(S.tmrSec); },
+  _fmtSec:sec=>{const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;},
+  tmrStart:()=>{
+    if(S.tmrOn)return;
+    if(!S.tmrInit){const m=parseInt(UI.v('tmrIn'))||5,md=UI.v('tmrMd');S.tmrSec=md==='down'?m*60:0;S.tmrDown=md==='down';S.tmrInit=true;}
+    S.tmrOn=true;App.requestWakeLock();
+    S.tmrIv=setInterval(()=>{
+      if(S.tmrDown){if(S.tmrSec<=0){clearInterval(S.tmrIv);S.tmrOn=false;App.releaseWakeLock();UI.toast('⏰ หมดเวลาแล้ว!','wn');return;}S.tmrSec--;}else S.tmrSec++;
+      const txt=App._fmtSec(S.tmrSec);
+      const el=$('tmrDisp');if(el)el.textContent=txt;
+      const fel=$('tmrFSNum');if(fel)fel.textContent=txt;
+    },1000);
+  },
+  tmrPause:()=>{clearInterval(S.tmrIv);S.tmrOn=false;App.releaseWakeLock();},
+  tmrReset:()=>{clearInterval(S.tmrIv);S.tmrOn=false;S.tmrInit=false;App.releaseWakeLock();const m=parseInt(UI.v('tmrIn'))||5;const el=$('tmrDisp');if(el)el.textContent=`${m}:00`;const fel=$('tmrFSNum');if(fel)fel.textContent=`${m}:00`;S.tmrSec=0;},
+  startNoise:async()=>{
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});S.noStream=stream;
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      const src=ctx.createMediaStreamSource(stream),ana=ctx.createAnalyser();ana.fftSize=256;src.connect(ana);
+      const data=new Uint8Array(ana.frequencyBinCount);
+      const tick=()=>{
+        ana.getByteFrequencyData(data);const avg=data.reduce((a,b)=>a+b,0)/data.length,pct=Math.min(100,avg/128*100);
+        const bar=$('noiseB'),lbl=$('noiseLbl'),st=$('noiseSt');
+        if(bar){bar.style.width=pct+'%';bar.style.background=pct>70?'var(--er)':pct>40?'var(--wn)':'var(--ok)';}
+        if(lbl)lbl.textContent=Math.round(pct)+' %';
+        if(st)st.textContent=pct>70?'[สูง] เสียงดังมาก!':pct>40?'[กลาง] เสียงปานกลาง':'[ต่ำ] เงียบดี';
+        S.noAnim=requestAnimationFrame(tick);
+      };tick();
+    }catch(e){UI.toast('ไม่สามารถเข้าถึงไมโครโฟน (เบราว์เซอร์อาจบล็อกสิทธิ์ในกรอบ iframe)','er');}
+  },
+  stopNoise:()=>{if(S.noAnim)cancelAnimationFrame(S.noAnim);if(S.noStream)S.noStream.getTracks().forEach(t=>t.stop());S.noStream=null;S.noAnim=null;},
+  doGroup:()=>{
+    const room=UI.v('grpRm'),size=parseInt(UI.v('grpSz'))||4;
+    const stus=[...(S.students[S.tab][room]||[])].sort(()=>Math.random()-.5);
+    const groups=[];let i=0;while(i<stus.length){groups.push(stus.slice(i,i+size));i+=size;}
+    UI.h('grpRes',`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${groups.map((g,i)=>`<div style="background:var(--g0);border:1px solid var(--gb);border-radius:8px;padding:9px;"><div style="font-weight:700;color:var(--cy);font-size:.76rem;margin-bottom:5px;">กลุ่ม ${i+1}</div>${g.map(n=>`<div style="font-size:.76rem;color:var(--t2);padding:1px 0;">• ${n}</div>`).join('')}</div>`).join('')}</div>`);
+  },
+  vote:(t,el)=>{S.poll[t]=(S.poll[t]||0)+1;const tot=S.poll.y+S.poll.m+S.poll.n;UI.h('py',S.poll.y);UI.h('pm',S.poll.m);UI.h('pn',S.poll.n);UI.h('ptot',tot);el.style.transform='scale(1.06)';setTimeout(()=>el.style.transform='',200);},
+  resetPoll:()=>{S.poll={y:0,m:0,n:0};UI.h('py',0);UI.h('pm',0);UI.h('pn',0);UI.h('ptot',0);},
+  refreshMsgBoard:async(showToastOnFail)=>{
+    const rm=UI.v('msgRm');if(!rm)return;
+    const r=await API.call('getMessages',{subject:S.tab,room:rm});
+    const list=$('msgList');if(!list)return;
+    if(!r||r.error){if(showToastOnFail)UI.toast('โหลดข้อความไม่สำเร็จ','er');return;}
+    const msgs=r.messages||[];S.msgCache=msgs;
+    UI.h('msgList',msgs.length?msgs.map(m=>
+      '<div class="msg-row"><div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;color:var(--cy);margin-bottom:2px;">'+_esc(m.student)+'</div>'
+      +'<div style="font-size:.92rem;color:var(--t1);word-break:break-word;white-space:pre-wrap;">'+_esc(m.message)+'</div>'
+      +'<div style="font-size:.68rem;color:var(--t4);margin-top:4px;">'+_esc(m.time)+'</div></div>'
+      +'<button class="btn btn-d btn-sm" onclick="App.delMsg(\''+m.id+'\')">ลบ</button></div>'
+    ).join(''):'<div style="text-align:center;padding:26px 10px;color:var(--t3);font-size:.85rem;">ยังไม่มีข้อความในห้องนี้<br>รอนักเรียนพิมพ์เข้ามาได้เลยครับ</div>');
+  },
+  delMsg:async(id)=>{
+    const r=await API.call('deleteMessage',{id});
+    if(r&&r.success)App.refreshMsgBoard(false);
+    else UI.toast((r&&r.error)||'ลบไม่สำเร็จ','er');
+  },
+  clearMsgBoard:async()=>{
+    const rm=UI.v('msgRm');if(!rm)return;
+    if(!confirm('ยืนยันลบข้อความทั้งหมดในห้อง '+rm+' หรือไม่?'))return;
+    const r=await API.call('clearMessages',{subject:S.tab,room:rm});
+    if(r&&r.success){UI.toast('ลบข้อความทั้งหมดแล้ว','ok');App.refreshMsgBoard(false);}
+    else UI.toast((r&&r.error)||'ลบไม่สำเร็จ','er');
+  }
+};
+
+$('tmrFSExitBtn').addEventListener('click',()=>App.tmrExitFS());
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement && S.tmrFS){ $('tmrFS').classList.remove('open'); S.tmrFS=false; } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.tmrOn && !S.wakeLock){ App.requestWakeLock(); } });
+$('photoFileIn').addEventListener('change',function(e){
+  const f=e.target.files&&e.target.files[0];const target=S.pendingPhotoTarget;
+  if(!f||!target){e.target.value='';return;}
+  const rd=new FileReader();
+  rd.onload=function(ev){
+    const img=new Image();
+    img.onload=async function(){
+      // ย่อรูปให้เหลือด้านยาวไม่เกิน 320px ก่อนอัปโหลด กันไฟล์ใหญ่เกินจำเป็น (แค่ใช้เป็นรูปโปรไฟล์เล็กๆ)
+      const maxSide=320;
+      let w=img.width,h=img.height;
+      if(w>h){ if(w>maxSide){h=Math.round(h*maxSide/w);w=maxSide;} }
+      else{ if(h>maxSide){w=Math.round(w*maxSide/h);h=maxSide;} }
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=cv.toDataURL('image/jpeg',0.82);
+      UI.toast('กำลังอัปโหลดรูป...','wn');
+      const r=await API.call('savePhoto',{subject:S.tab,room:target.room,student:target.student,photoData:dataUrl,mime:'image/jpeg'});
+      if(r&&r.success){
+        const idx=(S.photos||[]).findIndex(x=>x.subject===S.tab&&x.room===target.room&&x.student===target.student);
+        if(idx>=0)S.photos[idx].photoUrl=r.photoUrl; else S.photos.push({subject:S.tab,room:target.room,student:target.student,photoUrl:r.photoUrl});
+        UI.toast('อัปโหลดรูปสำเร็จ','ok');
+        App.renderPhotoGrid();
+      }else UI.toast((r&&r.error)||'อัปโหลดไม่สำเร็จ','er');
+    };
+    img.onerror=function(){UI.toast('เปิดไฟล์รูปไม่สำเร็จ','er');};
+    img.src=ev.target.result;
+  };
+  rd.onerror=function(){UI.toast('อ่านไฟล์ไม่สำเร็จ','er');};
+  rd.readAsDataURL(f);
+  e.target.value='';
+});
+</script>
+</body>
+</html>

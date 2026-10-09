@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ร่วมโหวต — โพลสด | @Skunkworks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#f3f4f9;
+    --bg-1:#ffffff;
+    --bg-2:#eef0f7;
+    --bg-3:#e3e6f0;
+    --border:rgba(15,23,42,.10);
+    --border-hi:rgba(15,23,42,.22);
+    --ink:#1a1f2e;
+    --ink-dim:#5b6178;
+    --ink-faint:#8a90a8;
+    --accent:#7c5cff;
+    --accent-2:#00e0ff;
+    --accent-3:#ff4d8d;
+    --success:#00e676;
+    --warning:#ffab00;
+    --danger:#ff3d5a;
+    --yellow:#ffd166;
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow:0 12px 36px rgba(15,23,42,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Sarabun',sans-serif;
+    background:var(--bg-0);
+    color:var(--ink);
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 600px 400px at 10% 20%, rgba(124,92,255,.15), transparent 60%),
+      radial-gradient(ellipse 500px 500px at 90% 80%, rgba(0,224,255,.1), transparent 60%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(255,77,141,.08), transparent 60%);
+    animation:bgShift 20s ease-in-out infinite alternate;
+  }
+  @keyframes bgShift{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(30deg);}}
+  body::after{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;
+    background-image:
+      linear-gradient(rgba(15,23,42,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,.035) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+
+  .card{
+    position:relative;z-index:1;
+    background:rgba(255,255,255,.85);backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:28px 24px;max-width:480px;width:100%;text-align:center;
+    box-shadow:var(--shadow);
+    animation:cardIn .6s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+  /* 🎬 เอ็นทรานซ์แอนิเมชันแบบ CSS ล้วน — ค้างที่ opacity 0 ไม่ได้ */
+  @keyframes riseIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  #content > *{animation:riseIn .5s cubic-bezier(.2,.9,.3,1) both;}
+  #content > *:nth-child(1){animation-delay:0s;}
+  #content > *:nth-child(2){animation-delay:.07s;}
+  #content > *:nth-child(3){animation-delay:.14s;}
+  #content > *:nth-child(4){animation-delay:.21s;}
+  #content > *:nth-child(5){animation-delay:.28s;}
+  #content > *:nth-child(6){animation-delay:.35s;}
+  #content > *:nth-child(n+7){animation-delay:.4s;}
+  @media (prefers-reduced-motion: reduce){
+    #content > *{animation:none !important;}
+    .card{animation:none !important;}
+  }
+
+  .brand{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    margin-bottom:14px;padding-bottom:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .brand-mark{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:800;color:#fff;
+    box-shadow:0 8px 24px rgba(124,92,255,.4);
+    position:relative;overflow:hidden;flex:none;
+  }
+  .brand-mark::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent 40%, rgba(255,255,255,.3) 50%, transparent 60%);
+    animation:shimmer 3s infinite;
+  }
+  @keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+  .brand-text h1{font-family:'Kanit',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.3px;}
+  .brand-text h1 span{
+    background:linear-gradient(135deg, var(--accent-2), var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand-text .dev{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--accent-2);background:rgba(0,224,255,.08);
+    padding:3px 10px;border-radius:999px;margin-top:4px;
+    border:1px solid rgba(0,224,255,.2);
+  }
+  .brand-text .dev::before{content:'⚡';}
+
+  .class-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:linear-gradient(135deg, rgba(124,92,255,.15), rgba(0,224,255,.15));
+    border:1px solid rgba(124,92,255,.3);
+    border-radius:var(--radius-sm);
+    padding:10px 14px;margin-bottom:16px;
+    font-weight:700;font-size:14px;color:var(--ink);
+    font-family:'Kanit',sans-serif;
+  }
+  .class-banner .class-name{
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .class-banner .class-name::before{content:'🎓';font-size:18px;}
+  .switch-room-btn{
+    background:rgba(255,255,255,.6);border:1px solid var(--border);
+    border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;
+    color:var(--ink-dim);cursor:pointer;font-family:'Sarabun',sans-serif;
+    transition:.2s;
+  }
+  .switch-room-btn:hover{background:#fff;color:var(--accent);border-color:var(--accent);}
+
+  .question-image{
+    max-width:100%;border-radius:var(--radius-sm);margin-bottom:18px;
+    border:1px solid var(--border);display:block;
+    box-shadow:0 12px 32px rgba(0,0,0,.3);
+  }
+  .question-wrap{margin-bottom:26px;}
+  .question{
+    font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;line-height:1.4;
+    color:var(--ink);text-shadow:0 0 20px rgba(124,92,255,.10);
+  }
+  .chalk-underline{display:block;width:60%;height:10px;margin:10px auto 0;}
+  .chalk-underline path{stroke:var(--accent);stroke-width:3;fill:none;stroke-linecap:round;opacity:.8;}
+
+  .opt-btn{
+    display:flex;align-items:center;gap:12px;
+    width:100%;padding:16px;margin-bottom:10px;border:none;
+    background:var(--bg-2);color:var(--ink);border-radius:var(--radius-sm);
+    font-size:16px;font-weight:600;font-family:'Sarabun',sans-serif;
+    cursor:pointer;text-align:left;
+    border-left:5px solid transparent;
+    transition:.3s;position:relative;overflow:hidden;
+  }
+  .opt-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent 40%, rgba(15,23,42,.05) 50%, transparent 60%);
+    transform:translateX(-100%);transition:.5s;
+  }
+  .opt-btn:hover::before{transform:translateX(100%);}
+  .opt-btn:hover{transform:translateX(4px);border-left-color:var(--accent);}
+  .opt-btn:active{transform:scale(.98);}
+  .opt-btn .letter{
+    width:32px;height:32px;border-radius:8px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:#fff;
+  }
+  .opt-btn.selected{
+    background:rgba(0,230,118,.12);color:var(--success);
+    border-left-color:var(--success);
+  }
+  .opt-btn.correct{
+    background:rgba(0,230,118,.15);color:var(--success);
+    border-left-color:var(--success);
+    box-shadow:0 0 0 2px rgba(0,230,118,.3);
+  }
+  .opt-btn.wrong{
+    background:rgba(255,61,90,.1);color:var(--danger);
+    border-left-color:var(--danger);opacity:.7;
+  }
+  .opt-btn .result-icon{margin-left:auto;font-size:18px;}
+
+  .rating-container{margin:20px 0;}
+  .rating-stars{display:flex;gap:10px;justify-content:center;margin-bottom:12px;}
+  .rating-star{
+    font-size:42px;cursor:pointer;transition:.25s;
+    filter:grayscale(.6) opacity(.35);
+    user-select:none;
+  }
+  .rating-star:hover{transform:scale(1.15);filter:none;}
+  .rating-star.active{filter:none;transform:scale(1.1);}
+  .rating-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-dim);padding:0 8px;}
+  .rating-value{
+    font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;
+    background:linear-gradient(135deg, var(--yellow), var(--accent-3));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-top:12px;min-height:36px;
+  }
+
+  textarea.answer-input{
+    width:100%;padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);
+    background:var(--bg-2);color:var(--ink);font-size:16px;font-family:'Sarabun',sans-serif;
+    resize:none;transition:.2s;
+  }
+  textarea.answer-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.15);}
+  .char-count{font-size:12px;color:var(--ink-dim);text-align:right;margin-top:8px;font-family:'JetBrains Mono',monospace;}
+
+  .submit-btn{
+    width:100%;padding:16px;margin-top:16px;border:none;border-radius:var(--radius-sm);
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));color:#fff;
+    font-weight:700;font-size:16px;font-family:'Sarabun',sans-serif;
+    cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+    box-shadow:0 8px 24px rgba(124,92,255,.4);
+  }
+  .submit-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent 40%, rgba(255,255,255,.25) 50%, transparent 60%);
+    transform:translateX(-100%);transition:.5s;
+  }
+  .submit-btn:hover::before{transform:translateX(100%);}
+  .submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(124,92,255,.5);}
+  .submit-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .submit-btn.secondary{
+    background:var(--bg-2);color:var(--ink);border:1px solid var(--border);
+    box-shadow:none;
+  }
+  .submit-btn.secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+  .name-section{text-align:center;padding:10px 0;}
+  .name-icon{font-size:54px;margin-bottom:12px;}
+  .name-title{font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px;}
+  .name-hint{font-size:14px;color:var(--ink-dim);margin-bottom:20px;line-height:1.6;}
+  .name-input{
+    width:100%;padding:14px 16px;border-radius:var(--radius-sm);
+    border:2px solid var(--border);background:var(--bg-2);color:var(--ink);
+    font-size:17px;font-family:'Sarabun',sans-serif;font-weight:600;
+    text-align:center;transition:.2s;margin-bottom:14px;
+  }
+  .name-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,92,255,.15);background:#fff;}
+  .name-error{
+    background:rgba(255,61,90,.1);border:1px solid rgba(255,61,90,.2);
+    color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;
+    font-size:13px;font-weight:600;margin-bottom:12px;display:none;
+  }
+  .name-error.show{display:block;}
+
+  .student-badge{
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+    background:linear-gradient(135deg, rgba(124,92,255,.12), rgba(0,224,255,.12));
+    border:1.5px solid rgba(124,92,255,.3);
+    color:var(--ink);border-radius:var(--radius-sm);padding:12px 16px;
+    font-size:15px;font-weight:700;margin-bottom:16px;
+    font-family:'Kanit',sans-serif;
+  }
+  .student-badge::before{content:'👤';font-size:18px;}
+  .student-badge .name-text{color:var(--accent);font-weight:800;}
+  .student-badge .edit-name{
+    background:rgba(255,255,255,.7);border:1px solid var(--border);
+    color:var(--ink-dim);cursor:pointer;
+    font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;
+    font-family:'Sarabun',sans-serif;transition:.2s;margin-left:6px;
+  }
+  .student-badge .edit-name:hover{color:var(--accent);border-color:var(--accent);background:#fff;}
+
+  .change-name-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:rgba(255,255,255,.8);border:1.5px solid var(--accent);
+    color:var(--accent);border-radius:999px;padding:10px 20px;
+    font-size:14px;font-weight:700;margin-top:18px;cursor:pointer;
+    font-family:'Kanit',sans-serif;transition:.2s;
+    box-shadow:0 4px 12px rgba(124,92,255,.15);
+  }
+  .change-name-btn:hover{background:var(--accent);color:#fff;transform:translateY(-1px);}
+  .change-name-btn::before{content:'✏️';}
+
+  .msg{color:var(--ink-dim);font-size:15px;margin-top:16px;line-height:1.6;}
+  .thankyou, .waiting{font-size:48px;margin-bottom:12px;}
+  .waiting{animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .your-answer{
+    background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);color:var(--success);
+    border-radius:var(--radius-sm);padding:14px 16px;font-weight:600;margin-top:12px;font-size:15px;
+    line-height:1.5;
+  }
+  .quiz-result{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;margin-top:14px;
+  }
+  .quiz-result.correct{background:rgba(0,230,118,.15);color:var(--success);border:1px solid rgba(0,230,118,.3);}
+  .quiz-result.wrong{background:rgba(255,61,90,.1);color:var(--danger);border:1px solid rgba(255,61,90,.25);}
+
+  #toastContainer{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:9999;width:min(92vw,380px);}
+  .toast{
+    background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-left:4px solid var(--accent-2);
+    color:var(--ink);padding:14px 18px;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:600;box-shadow:var(--shadow);
+    animation:toastIn .4s cubic-bezier(.2,.9,.3,1);
+  }
+  .toast.success{border-left-color:var(--success);}
+  .toast.error{border-left-color:var(--danger);}
+  .toast.warning{border-left-color:var(--warning);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(8px);
+    display:none;align-items:center;justify-content:center;z-index:10000;padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+    padding:28px 24px;max-width:380px;width:100%;text-align:center;
+    box-shadow:var(--shadow);animation:slideUp .4s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-box h3{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;}
+  .modal-box p{font-size:14px;color:var(--ink-dim);margin-bottom:16px;line-height:1.6;}
+  .room-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;max-height:300px;overflow-y:auto;padding:4px;}
+  .room-btn{
+    background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    padding:12px;font-family:'Kanit',sans-serif;font-weight:600;font-size:14px;
+    cursor:pointer;transition:.2s;color:var(--ink);
+  }
+  .room-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+  .room-btn.current{
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#fff;border-color:transparent;
+  }
+  .modal-actions{display:flex;gap:8px;}
+
+  @media(max-width:480px){
+    .card{padding:22px 18px;}
+    .question{font-size:19px;}
+    .rating-star{font-size:36px;}
+    .opt-btn{padding:14px;font-size:15px;}
+    .student-badge{font-size:14px;padding:10px 14px;}
+  }
+</style>
+</head>
+<body>
+<div class="card" id="mainCard">
+  <div class="brand">
+    <div class="brand-mark">⚡</div>
+    <div class="brand-text">
+      <h1>โพล<span>สด</span></h1>
+      <div class="dev">@Skunkworks</div>
+    </div>
+  </div>
+
+  <div class="class-banner" id="classBanner">
+    <span class="class-name" id="className">ห้องเรียน</span>
+    <button class="switch-room-btn" id="switchRoomBtn">🔄 เปลี่ยนห้อง</button>
+  </div>
+
+  <div id="content">
+    <div class="waiting">⏳</div>
+    <div class="msg">กำลังโหลด...</div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<div class="modal-overlay" id="roomModal">
+  <div class="modal-box">
+    <h3>🎓 เลือกห้องเรียน</h3>
+    <p>เลือกห้องที่คุณอยู่ในตอนนี้ เพื่อให้คำตอบส่งไปถึงครูที่ถูกต้อง</p>
+    <div class="room-grid" id="roomGrid"></div>
+    <div class="modal-actions">
+      <button class="submit-btn secondary" id="closeModalBtn" style="flex:1;">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, runTransaction, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { firebaseConfig, CLASS_LIST } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(location.search);
+let classId = params.get("class") || localStorage.getItem("studentLastClass") || CLASS_LIST[0];
+if (!params.get("class") && localStorage.getItem("studentLastClass")) {
+  classId = localStorage.getItem("studentLastClass");
+}
+localStorage.setItem("studentLastClass", classId);
+
+let pollRef = doc(db, "polls", classId);
+let unsubPoll = null;
+
+const CHALK = ['#7c5cff','#00e0ff','#ff4d8d','#00e676','#ffd166','#ff6b35'];
+const contentEl = document.getElementById("content");
+const classNameEl = document.getElementById("className");
+const roomModal = document.getElementById("roomModal");
+const roomGrid = document.getElementById("roomGrid");
+
+function updateClassDisplay() {
+  classNameEl.textContent = "ม." + classId.replace("-", "/");
+}
+updateClassDisplay();
+
+function showToast(msg, type = "info") {
+  const c = document.getElementById("toastContainer");
+  const t = document.createElement("div");
+  t.className = "toast " + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = "0"; t.style.transition = "opacity .4s";
+    setTimeout(() => t.remove(), 400);
+  }, 3500);
+}
+
+function getStudentId() {
+  let id = localStorage.getItem("studentDeviceId");
+  if (!id) { id = "dev_" + Math.random().toString(36).slice(2) + Date.now(); localStorage.setItem("studentDeviceId", id); }
+  return id;
+}
+const studentId = getStudentId();
+
+function getStudentName() {
+  const name = localStorage.getItem("studentName");
+  return name ? name.trim() : "";
+}
+
+document.getElementById("switchRoomBtn").addEventListener("click", openRoomModal);
+document.getElementById("closeModalBtn").addEventListener("click", () => roomModal.classList.remove("show"));
+
+function openRoomModal() {
+  roomGrid.innerHTML = "";
+  CLASS_LIST.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "room-btn" + (c === classId ? " current" : "");
+    btn.textContent = "ม." + c.replace("-", "/");
+    btn.addEventListener("click", () => switchRoom(c));
+    roomGrid.appendChild(btn);
+  });
+  roomModal.classList.add("show");
+}
+
+function switchRoom(newClassId) {
+  if (newClassId === classId) { roomModal.classList.remove("show"); return; }
+  classId = newClassId;
+  localStorage.setItem("studentLastClass", classId);
+  const newUrl = new URL(location.href);
+  newUrl.searchParams.set("class", classId);
+  history.replaceState(null, "", newUrl.toString());
+  pollRef = doc(db, "polls", classId);
+  updateClassDisplay();
+  roomModal.classList.remove("show");
+  if (unsubPoll) unsubPoll();
+  showToast("🔄 เปลี่ยนห้องเป็น ม." + classId.replace("-", "/") + " แล้ว", "success");
+  if (!getStudentName()) { renderNameInput(); } else { startWatching(); }
+}
+
+function renderNameInput() {
+  const currentName = getStudentName();
+  contentEl.innerHTML = `
+    <div class="name-section">
+      <div class="name-icon">👤</div>
+      <div class="name-title">คุณชื่ออะไร?</div>
+      <div class="name-hint">กรอกชื่อหรือชื่อเล่นของคุณ<br>ครูจะได้รู้ว่าใครตอบอะไร</div>
+      <div class="name-error" id="nameError"></div>
+      <input type="text" id="nameInput" class="name-input"
+             placeholder="เช่น น้องใหม่, สมชาย" maxlength="40"
+             value="${escapeHtml(currentName)}" autocomplete="nickname">
+      <button class="submit-btn" id="saveNameBtn" ${!currentName ? 'disabled' : ''}>
+        เข้าสู่ห้องเรียน 🚀
+      </button>
+      ${currentName ? '<button class="submit-btn secondary" id="cancelEditBtn" type="button" style="margin-top:8px;">ยกเลิก</button>' : ''}
+    </div>`;
+
+  const input = document.getElementById("nameInput");
+  const btn = document.getElementById("saveNameBtn");
+  const errorEl = document.getElementById("nameError");
+  const cancelBtn = document.getElementById("cancelEditBtn");
+
+  input.addEventListener("input", () => {
+    btn.disabled = input.value.trim().length === 0;
+    if (errorEl.classList.contains("show")) errorEl.classList.remove("show");
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && input.value.trim()) btn.click();
+  });
+  if (cancelBtn) cancelBtn.addEventListener("click", () => startWatching());
+
+  btn.addEventListener("click", () => {
+    const name = input.value.trim();
+    if (!name) {
+      errorEl.textContent = "❌ กรุณากรอกชื่อของคุณก่อน";
+      errorEl.classList.add("show");
+      return;
+    }
+    localStorage.setItem("studentName", name);
+    showToast("👋 สวัสดี " + name + "!", "success");
+    startWatching();   // ไปต่อทันที ไม่พึ่งแอนิเมชันใด ๆ
+  });
+
+  setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); } }, 150);
+}
+
+function renderStudentBadge() {
+  const name = getStudentName();
+  if (!name) return "";
+  return `<div class="student-badge">
+    <span>สวัสดี</span><span class="name-text">${escapeHtml(name)}</span>
+    <button class="edit-name" id="editNameBtn" type="button">✏️ เปลี่ยนชื่อ</button>
+  </div>`;
+}
+
+function attachNameEditListener() {
+  const editBtn = document.getElementById("editNameBtn");
+  if (editBtn) {
+    editBtn.addEventListener("click", () => {
+      if (unsubPoll) unsubPoll();
+      renderNameInput();
+    });
+  }
+}
+
+function attachSetNameListener() {
+  const btn = document.getElementById("setNameBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      if (unsubPoll) unsubPoll();
+      renderNameInput();
+    });
+  }
+}
+
+function startWatching() {
+  if (unsubPoll) unsubPoll();
+  unsubPoll = onSnapshot(pollRef, (snap) => {
+    if (!snap.exists()) return renderWaiting();
+    const data = snap.data();
+    const votedInfo = getVotedInfo(classId);
+    if (!data.active) return renderClosed();
+    if (votedInfo && votedInfo.pollId === data.pollId) return renderVoted(data, votedInfo);
+    renderQuestion(data);
+  }, (err) => {
+    contentEl.innerHTML = `<div class="waiting">⚠️</div><div class="msg">เชื่อมต่อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  });
+}
+
+function getVotedInfo(cid) {
+  const raw = localStorage.getItem(`voted_${cid}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function renderWaiting() {
+  const name = getStudentName();
+  contentEl.innerHTML = `
+    ${renderStudentBadge()}
+    <div class="waiting">⏳</div>
+    <div class="msg" style="font-size:17px;font-weight:600;">กำลังรอครูเริ่มโพล...</div>
+    <div style="margin-top:14px;font-size:13px;color:var(--ink-faint);line-height:1.6;">
+      💡 สแกน QR Code ที่หน้าจอครู<br>หรือรอครูเปิดโพลในห้อง <b>ม.${classId.replace('-', '/')}</b>
+    </div>
+    ${!name ? '<button class="change-name-btn" id="setNameBtn" type="button">ตั้งชื่อของคุณ</button>' : ''}`;
+  attachNameEditListener();
+  attachSetNameListener();
+}
+
+function renderClosed() {
+  const name = getStudentName();
+  contentEl.innerHTML = `
+    ${renderStudentBadge()}
+    <div class="thankyou">✅</div>
+    <div class="msg" style="font-size:17px;font-weight:600;">โพลนี้ปิดแล้ว</div>
+    <div class="msg">ขอบคุณที่ร่วมโหวตครับ/ค่ะ 🙏</div>
+    ${!name ? '<button class="change-name-btn" id="setNameBtn" type="button">ตั้งชื่อของคุณ</button>' : ''}`;
+  attachNameEditListener();
+  attachSetNameListener();
+}
+
+function underlineSvg() {
+  return `<svg class="chalk-underline" viewBox="0 0 300 14" preserveAspectRatio="none">
+    <path d="M2,9 Q40,2 78,9 T154,9 T230,9 T298,9"/></svg>`;
+}
+function imageHtml(data) {
+  return data.image ? `<img class="question-image" src="${data.image}">` : "";
+}
+
+function renderQuestion(data) {
+  let html = renderStudentBadge();
+  html += imageHtml(data);
+  html += `<div class="question-wrap"><div class="question">${escapeHtml(data.question)}</div>${underlineSvg()}</div>`;
+
+  if (data.type === "text") {
+    html += `<textarea id="answerInput" class="answer-input" rows="3" maxlength="120" placeholder="พิมพ์คำตอบของคุณ..."></textarea>
+      <div class="char-count"><span id="charCount">0</span>/120</div>
+      <button class="submit-btn" id="submitBtn" disabled>ส่งคำตอบ</button>`;
+    contentEl.innerHTML = html;
+    attachNameEditListener();
+    const input = document.getElementById("answerInput");
+    const btn = document.getElementById("submitBtn");
+    input.addEventListener("input", () => {
+      document.getElementById("charCount").textContent = input.value.length;
+      btn.disabled = input.value.trim().length === 0;
+    });
+    btn.addEventListener("click", () => submitText(input.value.trim(), data));
+  }
+  else if (data.type === "rating") {
+    html += `<div class="rating-container">
+      <div class="rating-stars" id="ratingStars">
+        ${[1,2,3,4,5].map(i => `<span class="rating-star" data-value="${i}">⭐</span>`).join('')}
+      </div>
+      <div class="rating-labels">
+        <span>น้อยมาก</span><span>ปานกลาง</span><span>มากที่สุด</span>
+      </div>
+      <div class="rating-value" id="ratingValue">เลือกระดับ 1-5</div>
+    </div>
+    <button class="submit-btn" id="submitBtn" disabled>ส่งคะแนน</button>`;
+    contentEl.innerHTML = html;
+    attachNameEditListener();
+    let selectedRating = 0;
+    const stars = contentEl.querySelectorAll(".rating-star");
+    const valueEl = document.getElementById("ratingValue");
+    const btn = document.getElementById("submitBtn");
+    const emojiLabels = ['', '😕 ต้องปรับปรุง', '😐 พอใช้', '🙂 ดี', '😄 ดีมาก', '🤩 ยอดเยี่ยม!'];
+    stars.forEach(star => {
+      star.addEventListener("click", () => {
+        selectedRating = parseInt(star.dataset.value);
+        stars.forEach((s, i) => s.classList.toggle("active", i < selectedRating));
+        valueEl.textContent = `${selectedRating} / 5 — ${emojiLabels[selectedRating]}`;
+        btn.disabled = false;
+        if (navigator.vibrate) navigator.vibrate(15);
+      });
+    });
+    btn.addEventListener("click", () => submitRating(selectedRating, data));
+  }
+  else {
+    data.options.forEach((opt, i) => {
+      html += `<button class="opt-btn" data-idx="${i}">
+        <span class="letter" style="background:${CHALK[i%CHALK.length]}">${String.fromCharCode(65+i)}</span>
+        <span>${escapeHtml(opt)}</span>
+      </button>`;
+    });
+    contentEl.innerHTML = html;
+    attachNameEditListener();
+    contentEl.querySelectorAll(".opt-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        btn.disabled = true;
+        voteChoice(parseInt(btn.dataset.idx), data);
+      });
+    });
+  }
+}
+
+function renderVoted(data, votedInfo) {
+  let html = renderStudentBadge();
+  html += imageHtml(data);
+  html += `<div class="question-wrap"><div class="question">${escapeHtml(data.question)}</div>${underlineSvg()}</div>`;
+
+  if (data.type === "text") {
+    html += `<div class="your-answer">💬 "${escapeHtml(votedInfo.text || "")}"</div>`;
+  }
+  else if (data.type === "rating") {
+    const emojiLabels = ['', '😕', '', '🙂', '😄', '🤩'];
+    html += `<div class="your-answer">${emojiLabels[votedInfo.value] || '⭐'} คุณให้คะแนน: <strong>${votedInfo.value}/5</strong></div>`;
+  }
+  else if (data.type === "quiz") {
+    data.options.forEach((opt, i) => {
+      const isChosen = i === votedInfo.optionIndex;
+      const isCorrect = i === data.correctIndex;
+      let cls = "", icon = "";
+      if (isCorrect) { cls = "correct"; icon = "✓"; }
+      else if (isChosen) { cls = "wrong"; icon = "✕"; }
+      html += `<div class="opt-btn ${cls}" style="cursor:default;">
+        <span class="letter" style="background:${CHALK[i%CHALK.length]}">${String.fromCharCode(65+i)}</span>
+        <span>${escapeHtml(opt)}</span>
+        ${icon ? `<span class="result-icon">${icon}</span>` : ''}
+      </div>`;
+    });
+    const wasCorrect = votedInfo.optionIndex === data.correctIndex;
+    html += `<div class="quiz-result ${wasCorrect ? 'correct' : 'wrong'}">
+      ${wasCorrect ? '🎉 ถูกต้อง!' : '❌ ยังไม่ถูก — ข้อที่ถูกคือ ' + String.fromCharCode(65 + data.correctIndex)}
+    </div>`;
+  }
+  else {
+    data.options.forEach((opt, i) => {
+      const isChosen = i === votedInfo.optionIndex;
+      html += `<div class="opt-btn ${isChosen ? 'selected' : ''}" style="cursor:default;">
+        <span class="letter" style="background:${CHALK[i%CHALK.length]}">${String.fromCharCode(65+i)}</span>
+        <span>${escapeHtml(opt)}</span>
+        ${isChosen ? '<span class="result-icon">✓</span>' : ''}
+      </div>`;
+    });
+  }
+
+  html += `<div class="msg" style="margin-top:20px;font-weight:600;">✅ คุณตอบแล้ว ขอบคุณครับ/ค่ะ 🙏</div>`;
+  contentEl.innerHTML = html;
+  attachNameEditListener();
+}
+
+function escapeHtml(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML;}
+
+async function voteChoice(optionIndex, data) {
+  const studentName = getStudentName();
+  const responseRef = doc(db, "polls", classId, "responses", studentId);
+  showToast("⏳ กำลังส่งคำตอบ...", "info");
+  try {
+    await runTransaction(db, async (tx) => {
+      const pollSnap = await tx.get(pollRef);
+      if (!pollSnap.exists()) throw new Error("ไม่พบโพลในห้องนี้");
+      const pollData = pollSnap.data();
+      if (!pollData.active) throw new Error("โพลปิดไปแล้ว");
+      if (pollData.pollId !== data.pollId) throw new Error("โพลเปลี่ยนไปแล้ว กรุณารีเฟรช");
+      const respSnap = await tx.get(responseRef);
+      if (respSnap.exists() && respSnap.data().pollId === pollData.pollId) throw new Error("คุณตอบไปแล้ว");
+      if (pollData.counts) {
+        const counts = [...pollData.counts];
+        counts[optionIndex] = (counts[optionIndex] || 0) + 1;
+        tx.update(pollRef, { counts });
+      }
+      tx.set(responseRef, { pollId: pollData.pollId, optionIndex, studentName, classId, votedAt: serverTimestamp() });
+    });
+    const votedInfo = { pollId: data.pollId, optionIndex, studentName };
+    localStorage.setItem(`voted_${classId}`, JSON.stringify(votedInfo));
+    await new Promise(r => setTimeout(r, 600));
+    renderVoted(data, votedInfo);
+    showToast("✅ ส่งคำตอบแล้ว! ครูเห็นทันที", "success");
+  } catch (err) { showToast("❌ " + err.message, "error"); startWatching(); }
+}
+
+async function submitText(text, data) {
+  if (!text) return;
+  const studentName = getStudentName();
+  const responseRef = doc(db, "polls", classId, "responses", studentId);
+  showToast("⏳ กำลังส่งคำตอบ...", "info");
+  try {
+    await runTransaction(db, async (tx) => {
+      const pollSnap = await tx.get(pollRef);
+      if (!pollSnap.exists()) throw new Error("ไม่พบโพลในห้องนี้");
+      const pollData = pollSnap.data();
+      if (!pollData.active) throw new Error("โพลปิดไปแล้ว");
+      if (pollData.pollId !== data.pollId) throw new Error("โพลเปลี่ยนไปแล้ว กรุณารีเฟรช");
+      const respSnap = await tx.get(responseRef);
+      if (respSnap.exists() && respSnap.data().pollId === pollData.pollId) throw new Error("คุณตอบไปแล้ว");
+      tx.set(responseRef, { pollId: pollData.pollId, text, studentName, classId, votedAt: serverTimestamp() });
+    });
+    const votedInfo = { pollId: data.pollId, text, studentName };
+    localStorage.setItem(`voted_${classId}`, JSON.stringify(votedInfo));
+    await new Promise(r => setTimeout(r, 600));
+    renderVoted(data, votedInfo);
+    showToast("✅ ส่งคำตอบแล้ว! ครูเห็นทันที", "success");
+  } catch (err) { showToast("❌ " + err.message, "error"); startWatching(); }
+}
+
+async function submitRating(value, data) {
+  if (value < 1 || value > 5) return;
+  const studentName = getStudentName();
+  const responseRef = doc(db, "polls", classId, "responses", studentId);
+  showToast("⏳ กำลังส่งคะแนน...", "info");
+  try {
+    await runTransaction(db, async (tx) => {
+      const pollSnap = await tx.get(pollRef);
+      if (!pollSnap.exists()) throw new Error("ไม่พบโพลในห้องนี้");
+      const pollData = pollSnap.data();
+      if (!pollData.active) throw new Error("โพลปิดไปแล้ว");
+      if (pollData.pollId !== data.pollId) throw new Error("โพลเปลี่ยนไปแล้ว กรุณารีเฟรช");
+      const respSnap = await tx.get(responseRef);
+      if (respSnap.exists() && respSnap.data().pollId === pollData.pollId) throw new Error("คุณตอบไปแล้ว");
+      const counts = [...(pollData.counts || Array(5).fill(0))];
+      counts[value - 1] = (counts[value - 1] || 0) + 1;
+      tx.update(pollRef, { counts });
+      tx.set(responseRef, { pollId: pollData.pollId, value, studentName, classId, votedAt: serverTimestamp() });
+    });
+    const votedInfo = { pollId: data.pollId, value, studentName };
+    localStorage.setItem(`voted_${classId}`, JSON.stringify(votedInfo));
+    await new Promise(r => setTimeout(r, 600));
+    renderVoted(data, votedInfo);
+    showToast(`✅ ให้คะแนน ${value}/5 แล้ว!`, "success");
+  } catch (err) { showToast("❌ " + err.message, "error"); startWatching(); }
+}
+
+if (!getStudentName()) {
+  renderNameInput();
+} else {
+  startWatching();
+}
+</script>
+</body>
+</html>

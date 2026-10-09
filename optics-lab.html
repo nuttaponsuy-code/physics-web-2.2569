@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optics Lab 3D — กระจกและเลนส์ | @Skunkworks</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root{
+    --bg-0:#05060a;
+    --bg-1:#0a0d16;
+    --bg-2:#111524;
+    --bg-3:#1a1f33;
+    --border:rgba(255,255,255,.08);
+    --border-hi:rgba(255,255,255,.18);
+    --ink:#f0f2ff;
+    --ink-dim:#8b92a8;
+    --accent:#7c5cff;
+    --accent-2:#00e0ff;
+    --accent-3:#ff4d8d;
+    --success:#00e676;
+    --warning:#ffab00;
+    --yellow:#ffd166;
+    --radius:14px;
+    --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    font-family:'Sarabun','Segoe UI',sans-serif;
+    background:var(--bg-0);color:var(--ink);
+  }
+  #canvas-container{position:fixed;inset:0;z-index:0;}
+  
+  /* UI Overlay */
+  .ui-layer{position:fixed;z-index:10;pointer-events:none;}
+  .ui-layer > *{pointer-events:auto;}
+  
+  /* Top Bar */
+  .top-bar{
+    top:0;left:0;right:0;padding:16px 24px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:linear-gradient(180deg, rgba(5,6,10,.9), transparent);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;box-shadow:0 4px 20px rgba(124,92,255,.4);
+  }
+  .brand h1{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700;}
+  .brand h1 span{
+    background:linear-gradient(135deg, var(--accent-2), var(--accent));
+    -webkit-background-clip:text;color:transparent;
+  }
+  .brand .dev{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--accent-2);opacity:.8;
+  }
+  .mode-switch{display:flex;gap:6px;background:rgba(17,21,36,.8);backdrop-filter:blur(20px);
+    border:1px solid var(--border);border-radius:var(--radius);padding:4px;}
+  .mode-btn{
+    background:none;border:none;color:var(--ink-dim);
+    font-family:'Sarabun',sans-serif;font-weight:600;font-size:13px;
+    padding:8px 16px;cursor:pointer;border-radius:8px;transition:.2s;
+  }
+  .mode-btn:hover{color:var(--ink);}
+  .mode-btn.active{
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#fff;box-shadow:0 4px 16px rgba(124,92,255,.4);
+  }
+  
+  /* Control Panel */
+  .control-panel{
+    bottom:20px;left:20px;width:320px;max-height:calc(100vh - 140px);
+    background:rgba(17,21,36,.85);backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .control-panel h3{
+    font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;
+    margin-bottom:14px;color:var(--accent-2);
+    display:flex;align-items:center;gap:8px;
+  }
+  .control-panel h3::before{content:'🎛️';}
+  .slider-group{margin-bottom:16px;}
+  .slider-group label{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;font-weight:600;color:var(--ink-dim);margin-bottom:8px;
+    text-transform:uppercase;letter-spacing:.5px;
+  }
+  .slider-group label .val{
+    font-family:'JetBrains Mono',monospace;color:var(--accent-2);
+    background:rgba(0,224,255,.1);padding:2px 8px;border-radius:6px;
+  }
+  input[type=range]{
+    width:100%;height:6px;border-radius:3px;
+    background:var(--bg-3);outline:none;
+    -webkit-appearance:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    cursor:pointer;box-shadow:0 2px 8px rgba(124,92,255,.5);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;border:none;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    cursor:pointer;
+  }
+  
+  /* Info Panel */
+  .info-panel{
+    top:80px;right:20px;width:280px;
+    background:rgba(17,21,36,.85);backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .info-panel h3{
+    font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;
+    margin-bottom:12px;color:var(--yellow);
+    display:flex;align-items:center;gap:8px;
+  }
+  .info-panel h3::before{content:'';}
+  .info-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 0;border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  .info-row:last-child{border-bottom:none;}
+  .info-row .label{color:var(--ink-dim);}
+  .info-row .value{
+    font-family:'JetBrains Mono',monospace;font-weight:600;
+    color:var(--ink);
+  }
+  .info-row .value.positive{color:var(--success);}
+  .info-row .value.negative{color:var(--accent-3);}
+  .image-type{
+    margin-top:12px;padding:10px 12px;
+    background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.25);
+    border-radius:8px;font-size:12px;font-weight:600;
+    color:var(--accent-2);text-align:center;
+  }
+  .equation{
+    margin-top:12px;padding:10px;
+    background:var(--bg-3);border-radius:8px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:var(--ink-dim);text-align:center;
+  }
+  .equation b{color:var(--yellow);}
+  
+  /* Legend */
+  .legend{
+    top:80px;left:20px;width:200px;
+    background:rgba(17,21,36,.85);backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .legend h4{
+    font-size:11px;font-weight:700;color:var(--ink-dim);
+    margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;
+  }
+  .legend-item{
+    display:flex;align-items:center;gap:8px;
+    font-size:12px;margin-bottom:6px;color:var(--ink);
+  }
+  .legend-dot{width:12px;height:12px;border-radius:3px;flex:none;}
+  
+  /* Hint */
+  .hint{
+    bottom:20px;right:20px;
+    background:rgba(17,21,36,.85);backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:12px 16px;font-size:12px;color:var(--ink-dim);
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .hint kbd{
+    background:var(--bg-3);padding:2px 6px;border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    border:1px solid var(--border);
+  }
+  
+  /* Loading */
+  #loading{
+    position:fixed;inset:0;z-index:100;
+    background:var(--bg-0);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;
+  }
+  .loader{
+    width:60px;height:60px;border-radius:50%;
+    border:3px solid var(--border);border-top-color:var(--accent);
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loading p{color:var(--ink-dim);font-size:14px;}
+  
+  @media(max-width:768px){
+    .control-panel{width:calc(100% - 40px);bottom:10px;left:20px;max-height:40vh;}
+    .info-panel,.legend{display:none;}
+    .hint{bottom:10px;right:10px;font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader"></div>
+  <p>กำลังโหลด Optics Lab 3D...</p>
+</div>
+
+<div id="canvas-container"></div>
+
+<!-- Top Bar -->
+<div class="ui-layer top-bar">
+  <div class="brand">
+    <div class="brand-mark">🔬</div>
+    <div>
+      <h1>Optics<span>Lab</span> 3D</h1>
+      <div class="dev">⚡ @Skunkworks</div>
+    </div>
+  </div>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="concave-mirror">🪞 กระจกเว้า</button>
+    <button class="mode-btn" data-mode="convex-mirror">🔵 กระจกนูน</button>
+    <button class="mode-btn" data-mode="convex-lens"> เลนส์นูน</button>
+    <button class="mode-btn" data-mode="concave-lens">🔬 เลนส์เว้า</button>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="ui-layer legend">
+  <h4>สัญลักษณ์</h4>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff4d8d"></div>วัตถุ (Object)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00e0ff"></div>ภาพ (Image)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffd166"></div>รังสีแสง</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7c5cff"></div>จุดโฟกัส (F)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00e676"></div>จุดศูนย์กลาง (C/2F)</div>
+</div>
+
+<!-- Control Panel -->
+<div class="ui-layer control-panel">
+  <h3>ควบคุมการทดลอง</h3>
+  
+  <div class="slider-group">
+    <label>ระยะวัตถุ (s) <span class="val" id="val-s">40 cm</span></label>
+    <input type="range" id="slider-s" min="5" max="100" value="40" step="1">
+  </div>
+  
+  <div class="slider-group">
+    <label>ความยาวโฟกัส (f) <span class="val" id="val-f">20 cm</span></label>
+    <input type="range" id="slider-f" min="5" max="50" value="20" step="1">
+  </div>
+  
+  <div class="slider-group">
+    <label>ความสูงวัตถุ <span class="val" id="val-h">10 cm</span></label>
+    <input type="range" id="slider-h" min="2" max="20" value="10" step="1">
+  </div>
+  
+  <div class="slider-group">
+    <label>ความทึบรังสี <span class="val" id="val-opacity">80%</span></label>
+    <input type="range" id="slider-opacity" min="20" max="100" value="80" step="5">
+  </div>
+</div>
+
+<!-- Info Panel -->
+<div class="ui-layer info-panel">
+  <h3>ผลลัพธ์</h3>
+  <div class="info-row">
+    <span class="label">ระยะวัตถุ (s)</span>
+    <span class="value" id="info-s">40 cm</span>
+  </div>
+  <div class="info-row">
+    <span class="label">ระยะภาพ (s')</span>
+    <span class="value" id="info-s-prime">40 cm</span>
+  </div>
+  <div class="info-row">
+    <span class="label">กำลังขยาย (m)</span>
+    <span class="value" id="info-m">-1.00</span>
+  </div>
+  <div class="info-row">
+    <span class="label">ความสูงภาพ</span>
+    <span class="value" id="info-h-prime">10 cm</span>
+  </div>
+  <div class="image-type" id="image-type">ภาพจริง • หัวกลับ • ขนาดเท่า</div>
+  <div class="equation">
+    <b>1/f = 1/s + 1/s'</b><br>
+    <span id="equation-text">1/20 = 1/40 + 1/40 ✓</span>
+  </div>
+</div>
+
+<!-- Hint -->
+<div class="ui-layer hint">
+  💡 <kbd>ลาก</kbd> หมุนมุมมอง • <kbd>Scroll</kbd> ซูม • <kbd>คลิกขวา+ลาก</kbd> เลื่อน
+</div>
+
+<script>
+// ==================== THREE.JS SETUP ====================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05060a);
+scene.fog = new THREE.Fog(0x05060a, 100, 300);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 40, 100);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 0, 0);
+controls.maxPolarAngle = Math.PI / 1.8;
+
+// ==================== LIGHTS ====================
+const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambientLight);
+
+const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+mainLight.position.set(20, 50, 30);
+mainLight.castShadow = true;
+mainLight.shadow.mapSize.width = 2048;
+mainLight.shadow.mapSize.height = 2048;
+scene.add(mainLight);
+
+const accentLight = new THREE.PointLight(0x7c5cff, 0.5, 100);
+accentLight.position.set(-30, 20, -20);
+scene.add(accentLight);
+
+// ==================== GRID & AXES ====================
+const gridHelper = new THREE.GridHelper(200, 40, 0x1a1f33, 0x0a0d16);
+scene.add(gridHelper);
+
+const axisHelper = new THREE.AxesHelper(30);
+scene.add(axisHelper);
+
+// Principal axis (x-axis line)
+const axisMaterial = new THREE.LineBasicMaterial({ color: 0x5a6178, linewidth: 2 });
+const axisPoints = [new THREE.Vector3(-100, 0.1, 0), new THREE.Vector3(100, 0.1, 0)];
+const axisGeometry = new THREE.BufferGeometry().setFromPoints(axisPoints);
+const principalAxis = new THREE.Line(axisGeometry, axisMaterial);
+scene.add(principalAxis);
+
+// ==================== STATE ====================
+const state = {
+  mode: 'concave-mirror',
+  s: 40,      // object distance
+  f: 20,      // focal length
+  h: 10,      // object height
+  opacity: 0.8
+};
+
+// ==================== OBJECTS ====================
+let mirrorMesh, lensMesh, objectArrow, imageArrow;
+let focalPoints = [], centerPoints = [];
+let rays = [];
+let rayLines = [];
+
+// Materials
+const mirrorMat = new THREE.MeshPhysicalMaterial({
+  color: 0xc0c0d0, metalness: 0.9, roughness: 0.1,
+  side: THREE.DoubleSide, transparent: true, opacity: 0.85
+});
+const lensMat = new THREE.MeshPhysicalMaterial({
+  color: 0x88ccff, metalness: 0.1, roughness: 0.1,
+  transmission: 0.6, transparent: true, opacity: 0.5,
+  side: THREE.DoubleSide
+});
+const objectMat = new THREE.MeshStandardMaterial({ color: 0xff4d8d, emissive: 0xff4d8d, emissiveIntensity: 0.3 });
+const imageMat = new THREE.MeshStandardMaterial({ color: 0x00e0ff, emissive: 0x00e0ff, emissiveIntensity: 0.4, transparent: true, opacity: 0.8 });
+const rayMat = new THREE.LineBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.8 });
+const focalMat = new THREE.MeshStandardMaterial({ color: 0x7c5cff, emissive: 0x7c5cff, emissiveIntensity: 0.5 });
+const centerMat = new THREE.MeshStandardMaterial({ color: 0x00e676, emissive: 0x00e676, emissiveIntensity: 0.5 });
+
+// Create arrow helper
+function createArrow(height, material, isImage = false) {
+  const group = new THREE.Group();
+  // Shaft
+  const shaftGeo = new THREE.CylinderGeometry(0.3, 0.3, height, 8);
+  const shaft = new THREE.Mesh(shaftGeo, material);
+  shaft.position.y = height / 2;
+  shaft.castShadow = true;
+  group.add(shaft);
+  // Head
+  const headGeo = new THREE.ConeGeometry(0.8, 2, 8);
+  const head = new THREE.Mesh(headGeo, material);
+  head.position.y = height + 1;
+  head.castShadow = true;
+  group.add(head);
+  // Base
+  const baseGeo = new THREE.CylinderGeometry(1, 1, 0.3, 16);
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0x333344 });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.position.y = 0.15;
+  group.add(base);
+  return group;
+}
+
+// Create mirror (concave/convex)
+function createMirror(isConcave) {
+  const group = new THREE.Group();
+  // Curved surface using LatheGeometry
+  const curve = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(0, 15, isConcave ? -3 : 3),
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, -15, isConcave ? -3 : 3)
+  );
+  const points = curve.getPoints(20);
+  const latheGeo = new THREE.LatheGeometry(points.map(p => new THREE.Vector2(p.z, p.y)), 32);
+  const mirror = new THREE.Mesh(latheGeo, mirrorMat);
+  mirror.rotation.x = Math.PI / 2;
+  mirror.castShadow = true;
+  group.add(mirror);
+  return group;
+}
+
+// Create lens (convex/concave)
+function createLens(isConvex) {
+  const group = new THREE.Group();
+  // Lens shape
+  const shape = new THREE.Shape();
+  const thickness = isConvex ? 2 : -1;
+  shape.moveTo(0, -15);
+  shape.quadraticCurveTo(thickness * 3, 0, 0, 15);
+  shape.quadraticCurveTo(-thickness * 3, 0, 0, -15);
+  
+  const extrudeSettings = { depth: 0.5, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2 };
+  const lensGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  const lens = new THREE.Mesh(lensGeo, lensMat);
+  lens.rotation.y = Math.PI / 2;
+  lens.castShadow = true;
+  group.add(lens);
+  return group;
+}
+
+// Create focal point marker
+function createFocalPoint(x, label) {
+  const group = new THREE.Group();
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), focalMat);
+  sphere.position.set(x, 0, 0);
+  group.add(sphere);
+  return group;
+}
+
+// Create ray line
+function createRay(points) {
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const line = new THREE.Line(geometry, rayMat.clone());
+  return line;
+}
+
+// ==================== INIT SCENE ====================
+function initScene() {
+  // Clear old objects
+  if (mirrorMesh) scene.remove(mirrorMesh);
+  if (lensMesh) scene.remove(lensMesh);
+  if (objectArrow) scene.remove(objectArrow);
+  if (imageArrow) scene.remove(imageArrow);
+  focalPoints.forEach(p => scene.remove(p));
+  centerPoints.forEach(p => scene.remove(p));
+  rayLines.forEach(r => scene.remove(r));
+  focalPoints = [];
+  centerPoints = [];
+  rayLines = [];
+  
+  const isMirror = state.mode.includes('mirror');
+  const isConcave = state.mode.includes('concave');
+  const f = state.f;
+  
+  // Create optical element at origin
+  if (isMirror) {
+    mirrorMesh = createMirror(isConcave);
+    scene.add(mirrorMesh);
+  } else {
+    lensMesh = createLens(!isConcave); // convex lens when mode is convex-lens
+    scene.add(lensMesh);
+  }
+  
+  // Focal points
+  const f1 = createFocalPoint(-f, 'F');
+  const f2 = createFocalPoint(f, 'F\'');
+  scene.add(f1); scene.add(f2);
+  focalPoints.push(f1, f2);
+  
+  // Center of curvature (2F) - for mirrors only
+  if (isMirror) {
+    const c1 = createFocalPoint(-2 * f, 'C');
+    const c2 = createFocalPoint(2 * f, 'C\'');
+    c1.children[0].material = centerMat.clone();
+    c2.children[0].material = centerMat.clone();
+    scene.add(c1); scene.add(c2);
+    centerPoints.push(c1, c2);
+  }
+  
+  // Object arrow (placed at -s on x-axis)
+  objectArrow = createArrow(state.h, objectMat);
+  objectArrow.position.set(-state.s, 0, 0);
+  scene.add(objectArrow);
+  
+  // Image arrow (placeholder)
+  imageArrow = createArrow(state.h, imageMat, true);
+  scene.add(imageArrow);
+  
+  updateOptics();
+}
+
+// ==================== OPTICS CALCULATION ====================
+function calculateImage() {
+  const s = state.s;
+  const f = state.f;
+  const isMirror = state.mode.includes('mirror');
+  const isConcave = state.mode.includes('concave');
+  
+  let s_prime, m;
+  
+  if (isMirror) {
+    // Mirror equation: 1/f = 1/s + 1/s'
+    // For concave mirror: f > 0, for convex mirror: f < 0
+    const f_signed = isConcave ? f : -f;
+    if (Math.abs(s - f_signed) < 0.1) {
+      s_prime = Infinity;
+      m = Infinity;
+    } else {
+      s_prime = (s * f_signed) / (s - f_signed);
+      m = -s_prime / s;
+    }
+  } else {
+    // Lens equation: 1/f = 1/s + 1/s'
+    // For convex lens: f > 0, for concave lens: f < 0
+    const f_signed = state.mode === 'convex-lens' ? f : -f;
+    if (Math.abs(s - f_signed) < 0.1) {
+      s_prime = Infinity;
+      m = Infinity;
+    } else {
+      s_prime = (s * f_signed) / (s - f_signed);
+      m = -s_prime / s;
+    }
+  }
+  
+  return { s_prime, m };
+}
+
+// ==================== UPDATE OPTICS ====================
+function updateOptics() {
+  const { s_prime, m } = calculateImage();
+  const isMirror = state.mode.includes('mirror');
+  const isConcave = state.mode.includes('concave');
+  const f = state.f;
+  const f_signed = isMirror ? (isConcave ? f : -f) : (state.mode === 'convex-lens' ? f : -f);
+  
+  // Update object position
+  if (objectArrow) {
+    objectArrow.position.set(-state.s, 0, 0);
+    // Scale object height
+    const objScale = state.h / 10;
+    objectArrow.scale.set(1, objScale, 1);
+  }
+  
+  // Update image
+  if (imageArrow) {
+    if (Math.abs(s_prime) < 1000) {
+      const imgX = isMirror ? -s_prime : s_prime;
+      imageArrow.position.set(imgX, 0, 0);
+      const imgHeight = Math.abs(m) * state.h;
+      const imgScale = imgHeight / 10;
+      imageArrow.scale.set(1, imgScale * Math.sign(m), 1);
+      imageArrow.visible = true;
+      
+      // Update material based on real/virtual
+      if (m < 0) {
+        // Real image - inverted
+        imageMat.color.setHex(0x00e0ff);
+        imageMat.emissive.setHex(0x00e0ff);
+      } else {
+        // Virtual image - upright
+        imageMat.color.setHex(0x00e676);
+        imageMat.emissive.setHex(0x00e676);
+      }
+    } else {
+      imageArrow.visible = false;
+    }
+  }
+  
+  // Update rays
+  updateRays(s_prime, m, f_signed);
+  
+  // Update UI
+  updateInfoPanel(s_prime, m, f_signed);
+}
+
+function updateRays(s_prime, m, f_signed) {
+  // Clear old rays
+  rayLines.forEach(r => scene.remove(r));
+  rayLines = [];
+  
+  const objTop = new THREE.Vector3(-state.s, state.h, 0);
+  const objBase = new THREE.Vector3(-state.s, 0, 0);
+  const isMirror = state.mode.includes('mirror');
+  const isConcave = state.mode.includes('concave');
+  const f = Math.abs(f_signed);
+  
+  // Ray 1: Parallel to axis → through focal point
+  const ray1Points = [];
+  ray1Points.push(objTop.clone());
+  if (isMirror) {
+    // Hits mirror at origin, reflects through F
+    const hitPoint = new THREE.Vector3(0, state.h, 0);
+    ray1Points.push(hitPoint);
+    if (Math.abs(s_prime) < 1000) {
+      const imgTop = new THREE.Vector3(-s_prime, m * state.h, 0);
+      ray1Points.push(imgTop);
+      // Extend ray
+      const direction = imgTop.clone().sub(hitPoint).normalize();
+      const extended = hitPoint.clone().add(direction.multiplyScalar(50));
+      ray1Points.push(extended);
+    }
+  } else {
+    // Hits lens at origin, refracts through F'
+    const hitPoint = new THREE.Vector3(0, state.h, 0);
+    ray1Points.push(hitPoint);
+    if (Math.abs(s_prime) < 1000) {
+      const imgTop = new THREE.Vector3(s_prime, m * state.h, 0);
+      ray1Points.push(imgTop);
+      const direction = imgTop.clone().sub(hitPoint).normalize();
+      const extended = hitPoint.clone().add(direction.multiplyScalar(50));
+      ray1Points.push(extended);
+    }
+  }
+  const ray1 = createRay(ray1Points);
+  scene.add(ray1);
+  rayLines.push(ray1);
+  
+  // Ray 2: Through focal point → parallel to axis
+  const ray2Points = [];
+  ray2Points.push(objTop.clone());
+  if (isMirror) {
+    // Through F, hits mirror, reflects parallel
+    const fPoint = new THREE.Vector3(-f_signed, 0, 0);
+    // Calculate where ray through F hits mirror
+    const t = f_signed / (state.s - f_signed);
+    const hitY = state.h * (1 - t);
+    const hitPoint = new THREE.Vector3(0, hitY, 0);
+    ray2Points.push(hitPoint);
+    // Reflects parallel
+    const parallelEnd = new THREE.Vector3(50, hitY, 0);
+    ray2Points.push(parallelEnd);
+  } else {
+    // Through F, hits lens, refracts parallel
+    const fPoint = new THREE.Vector3(-f_signed, 0, 0);
+    const t = f_signed / (state.s - f_signed);
+    const hitY = state.h * (1 - t);
+    const hitPoint = new THREE.Vector3(0, hitY, 0);
+    ray2Points.push(hitPoint);
+    const parallelEnd = new THREE.Vector3(50, hitY, 0);
+    ray2Points.push(parallelEnd);
+  }
+  const ray2 = createRay(ray2Points);
+  scene.add(ray2);
+  rayLines.push(ray2);
+  
+  // Ray 3: Through center → straight
+  const ray3Points = [];
+  ray3Points.push(objTop.clone());
+  const centerPoint = new THREE.Vector3(0, 0, 0);
+  ray3Points.push(centerPoint);
+  if (Math.abs(s_prime) < 1000) {
+    const imgTop = isMirror ? new THREE.Vector3(-s_prime, m * state.h, 0) : new THREE.Vector3(s_prime, m * state.h, 0);
+    ray3Points.push(imgTop);
+    const direction = imgTop.clone().sub(centerPoint).normalize();
+    const extended = centerPoint.clone().add(direction.multiplyScalar(50));
+    ray3Points.push(extended);
+  }
+  const ray3 = createRay(ray3Points);
+  scene.add(ray3);
+  rayLines.push(ray3);
+  
+  // Update ray opacity
+  rayLines.forEach(r => {
+    r.material.opacity = state.opacity;
+  });
+}
+
+function updateInfoPanel(s_prime, m, f_signed) {
+  document.getElementById('info-s').textContent = state.s + ' cm';
+  
+  const s_primeEl = document.getElementById('info-s-prime');
+  if (Math.abs(s_prime) > 1000) {
+    s_primeEl.textContent = '∞ (ไม่เกิดภาพ)';
+    s_primeEl.className = 'value';
+  } else {
+    s_primeEl.textContent = Math.abs(s_prime).toFixed(1) + ' cm';
+    s_primeEl.className = 'value ' + (s_prime > 0 ? 'positive' : 'negative');
+  }
+  
+  const mEl = document.getElementById('info-m');
+  if (Math.abs(m) > 1000) {
+    mEl.textContent = '∞';
+  } else {
+    mEl.textContent = m.toFixed(2);
+    mEl.className = 'value ' + (m < 0 ? 'negative' : 'positive');
+  }
+  
+  const h_prime = Math.abs(m) * state.h;
+  document.getElementById('info-h-prime').textContent = h_prime.toFixed(1) + ' cm';
+  
+  // Image type
+  const typeEl = document.getElementById('image-type');
+  if (Math.abs(s_prime) > 1000) {
+    typeEl.textContent = 'รังสีขนาน • ไม่เกิดภาพ';
+  } else if (s_prime > 0 && m < 0) {
+    const size = Math.abs(m) > 1 ? 'ขยาย' : Math.abs(m) < 1 ? 'ย่อ' : 'ขนาดเท่า';
+    typeEl.textContent = `ภาพจริง • หัวกลับ • ${size}`;
+  } else if (s_prime < 0 && m > 0) {
+    const size = Math.abs(m) > 1 ? 'ขยาย' : Math.abs(m) < 1 ? 'ย่อ' : 'ขนาดเท่า';
+    typeEl.textContent = `ภาพเสมือน • หัวตั้ง • ${size}`;
+  }
+  
+  // Equation
+  const eqEl = document.getElementById('equation-text');
+  if (Math.abs(s_prime) > 1000) {
+    eqEl.textContent = `1/${f_signed} = 1/${state.s} + 1/`;
+  } else {
+    eqEl.textContent = `1/${f_signed} = 1/${state.s} + 1/${s_prime.toFixed(1)}`;
+  }
+}
+
+// ==================== UI EVENT HANDLERS ====================
+document.getElementById('slider-s').addEventListener('input', (e) => {
+  state.s = parseFloat(e.target.value);
+  document.getElementById('val-s').textContent = state.s + ' cm';
+  updateOptics();
+});
+
+document.getElementById('slider-f').addEventListener('input', (e) => {
+  state.f = parseFloat(e.target.value);
+  document.getElementById('val-f').textContent = state.f + ' cm';
+  initScene();
+});
+
+document.getElementById('slider-h').addEventListener('input', (e) => {
+  state.h = parseFloat(e.target.value);
+  document.getElementById('val-h').textContent = state.h + ' cm';
+  updateOptics();
+});
+
+document.getElementById('slider-opacity').addEventListener('input', (e) => {
+  state.opacity = parseFloat(e.target.value) / 100;
+  document.getElementById('val-opacity').textContent = e.target.value + '%';
+  rayLines.forEach(r => r.material.opacity = state.opacity);
+});
+
+// Mode switch
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    initScene();
+  });
+});
+
+// ==================== ANIMATION LOOP ====================
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ==================== RESIZE HANDLER ====================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ==================== START ====================
+initScene();
+animate();
+
+// Hide loading
+setTimeout(() => {
+  document.getElementById('loading').style.opacity = '0';
+  document.getElementById('loading').style.transition = 'opacity 0.5s';
+  setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+}, 1000);
+
+</script>
+</body>
+</html>

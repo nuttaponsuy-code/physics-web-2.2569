@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pascal's Law - Hydraulic Lift Lab | @SkunkworksNT</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-thai@5.0.0/index.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5.0.0/index.css" rel="stylesheet">
+<style>
+  * { font-family:'Noto Sans Thai',sans-serif; box-sizing:border-box; }
+  body { margin:0; overflow:hidden; background:#0a0e1a; }
+  #canvas-container { width:100vw; height:100vh; position:fixed; inset:0; z-index:1; }
+  .glass { background:rgba(15,20,35,.78); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.1); }
+  .glass-light { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); }
+  .panel { box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .skunkworks { font-family:'Orbitron',monospace; letter-spacing:3px; }
+  .glow-text { text-shadow:0 0 18px rgba(245,158,11,.8),0 0 36px rgba(245,158,11,.4); }
+  .btn-primary { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 4px 15px rgba(245,158,11,.35); transition:.2s; }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(245,158,11,.55); }
+  .btn-ghost { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.15); transition:.2s; }
+  .btn-ghost:hover { background:rgba(255,255,255,.12); border-color:rgba(245,158,11,.5); }
+  .tray-card { cursor:grab; transition:.15s; user-select:none; touch-action:none; }
+  .tray-card:hover { transform:translateY(-4px); border-color:rgba(245,158,11,.6); box-shadow:0 8px 20px rgba(245,158,11,.25); }
+  .tray-card:active { cursor:grabbing; transform:scale(.96); }
+  #ghost { position:fixed; z-index:60; pointer-events:none; transform:translate(-50%,-70%) scale(1.05); filter:drop-shadow(0 10px 18px rgba(0,0,0,.6)); opacity:.92; }
+  .badge-lift { background:rgba(34,197,94,.15); border:1px solid #22c55e; color:#4ade80; }
+  .badge-hold { background:rgba(239,68,68,.12); border:1px solid #ef4444; color:#f87171; }
+  .toast { animation:tin .3s ease; }
+  @keyframes tin { from { opacity:0; transform:translateY(-12px);} to { opacity:1; transform:translateY(0);} }
+  .pulse-ring { animation:pr 2s infinite; }
+  @keyframes pr { 0%{box-shadow:0 0 0 0 rgba(245,158,11,.6);} 70%{box-shadow:0 0 0 14px rgba(245,158,11,0);} 100%{box-shadow:0 0 0 0 rgba(245,158,11,0);} }
+  ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:rgba(0,0,0,.2);} ::-webkit-scrollbar-thumb{background:rgba(245,158,11,.5);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Header -->
+<div class="fixed top-4 left-1/2 -translate-x-1/2 z-20 glass panel rounded-2xl px-6 py-3 flex items-center gap-4">
+  <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xl pulse-ring">P</div>
+  <div>
+    <h1 class="text-lg font-bold text-white tracking-wide">Pascal's Law Apparatus</h1>
+    <p class="text-xs text-amber-300/80">ห้องทดลองไฮดรอลิกเสมือนจริง • Drag & Drop Mass Lab</p>
+  </div>
+  <div class="hidden md:flex items-center gap-2 ml-3 pl-3 border-l border-white/10">
+    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div><span class="text-xs text-gray-400">LIVE</span>
+  </div>
+</div>
+
+<!-- Fullscreen -->
+<button id="fullscreen-btn" class="fixed top-4 right-4 z-30 glass-light rounded-xl p-3 hover:bg-white/15 transition group" title="โหมดเต็มจอ">
+  <svg class="w-5 h-5 text-amber-400 group-hover:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+  </svg>
+</button>
+
+<!-- Left Status Panel -->
+<div class="fixed top-24 left-4 z-20 glass panel rounded-2xl p-5 w-[300px] max-h-[calc(100vh-11rem)] overflow-y-auto">
+  <h2 class="font-bold text-white mb-3 flex items-center gap-2">
+    <span class="w-1 h-6 bg-gradient-to-b from-amber-400 to-orange-600 rounded-full"></span>
+    <span class="text-amber-400">สถานะการทดลอง</span>
+  </h2>
+
+  <div class="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-3 mb-3 border border-amber-500/30 text-center">
+    <div class="formula text-white text-base" style="font-family:'Times New Roman',serif;font-style:italic;">P₁ = P₂ → F₁/A₁ = F₂/A₂</div>
+    <div class="text-[11px] text-gray-400 mt-1">A₁ = 10 cm² • A₂ = 100 cm² • อัตราทด = 10×</div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-3">
+    <div class="value-box rounded-xl p-2.5" style="background:rgba(59,130,246,.1);border-left:3px solid #3b82f6;">
+      <div class="text-[10px] text-blue-300 font-semibold">ฝั่งเล็ก (วางก้อน ส.น.ว.)</div>
+      <div class="text-xl font-bold text-white"><span id="s-m1">0</span> <span class="text-xs text-gray-400">kg</span></div>
+      <div class="text-[11px] text-gray-400">P₁ = <span id="s-p1" class="text-blue-300 font-semibold">0</span> kPa</div>
+    </div>
+    <div class="value-box rounded-xl p-2.5" style="background:rgba(239,68,68,.1);border-left:3px solid #ef4444;">
+      <div class="text-[10px] text-red-300 font-semibold">ฝั่งใหญ่ (วางวัตถุ)</div>
+      <div class="text-xl font-bold text-white"><span id="s-M">0</span> <span class="text-xs text-gray-400">kg</span></div>
+      <div class="text-[11px] text-gray-400">P₂ = <span id="s-p2" class="text-red-300 font-semibold">0</span> kPa</div>
+    </div>
+  </div>
+
+  <div class="rounded-xl p-3 mb-3 glass-light">
+    <div class="flex items-center justify-between mb-1">
+      <span class="text-xs text-gray-300">เกณฑ์ยกขึ้น: m₁ ≥ M/10</span>
+      <span id="s-badge" class="badge-hold text-[10px] px-2 py-0.5 rounded-full font-bold">ยังไม่ยก</span>
+    </div>
+    <div class="text-sm text-white">ต้องวางก้อนมวลอย่างน้อย <span id="s-need" class="text-amber-400 font-bold">0</span> kg</div>
+    <div id="s-hint" class="text-xs text-gray-400 mt-1">วางวัตถุฝั่งใหญ่เพื่อเริ่มการทดลอง</div>
+  </div>
+
+  <div class="bg-green-500/10 border border-green-500/30 rounded-xl p-2.5 mb-3">
+    <div class="text-[10px] text-green-300 font-semibold">🏆 สถิติมวลน้อยสุดที่ยกขึ้นได้</div>
+    <div id="s-record" class="text-sm text-green-400 font-bold">—</div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-3">
+    <button id="btn-clear" class="btn-primary py-2 rounded-lg text-white text-xs font-semibold"> ล้างทั้งหมด</button>
+    <button id="btn-view" class="btn-ghost py-2 rounded-lg text-white text-xs font-semibold">🎥 มุมกล้อง</button>
+  </div>
+
+  <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-[11px] text-blue-200 leading-relaxed">
+    <b class="text-blue-300">วิธีเล่น:</b> ลากก้อนมวล/วัตถุจากถาดด้านล่างไปวางบนแท่นลูกสูบได้<b>ทั้งสองฝั่ง</b> • หยิบสิ่งที่วางไว้เพื่อย้ายหรือเอาออก • หมุนมุมมอง: ลากพื้นที่ว่าง • ซูม: scroll
+    <div class="text-gray-500 mt-1">* การกระจัดถูกขยายเพื่อให้มองเห็นชัด — อัตราส่วนแรงถูกต้องตามกฎของปาสคาล</div>
+  </div>
+</div>
+
+<!-- Tray -->
+<div id="tray" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 glass panel rounded-2xl px-4 py-3 flex items-center gap-4 max-w-[95vw]">
+  <div>
+    <div class="text-[10px] text-amber-300 font-bold mb-1.5 tracking-wide">ก้อนมวล ส.น.ว. (ลากไปวาง)</div>
+    <div class="flex gap-2">
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="1">
+        <div class="w-6 h-6 rounded" style="background:#60a5fa;"></div><div class="text-[10px] text-white mt-1 font-bold">1 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="10">
+        <div class="w-7 h-7 rounded" style="background:#34d399;"></div><div class="text-[10px] text-white mt-1 font-bold">10 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="50">
+        <div class="w-8 h-8 rounded" style="background:#fbbf24;"></div><div class="text-[10px] text-white mt-1 font-bold">50 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="100">
+        <div class="w-9 h-9 rounded" style="background:#f59e0b;"></div><div class="text-[10px] text-white mt-1 font-bold">100 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="500">
+        <div class="w-10 h-10 rounded" style="background:#f472b6;"></div><div class="text-[10px] text-white mt-1 font-bold">500 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-2.5 py-2 flex flex-col items-center" data-kind="block" data-mass="1000">
+        <div class="w-11 h-11 rounded" style="background:#a78bfa;"></div><div class="text-[10px] text-white mt-1 font-bold">1000 kg</div>
+      </div>
+    </div>
+  </div>
+  <div class="w-px self-stretch bg-white/10"></div>
+  <div>
+    <div class="text-[10px] text-red-300 font-bold mb-1.5 tracking-wide">วัตถุทดสอบ (มวลมาก)</div>
+    <div class="flex gap-2">
+      <div class="tray-card glass-light rounded-xl px-3 py-2 flex flex-col items-center" data-kind="load" data-type="motorcycle">
+        <div class="text-2xl">🏍️</div><div class="text-[10px] text-white font-bold">มอไซค์</div><div class="text-[9px] text-gray-400">200 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-3 py-2 flex flex-col items-center" data-kind="load" data-type="car">
+        <div class="text-2xl">🚗</div><div class="text-[10px] text-white font-bold">รถยนต์</div><div class="text-[9px] text-gray-400">1,500 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-3 py-2 flex flex-col items-center" data-kind="load" data-type="elephant">
+        <div class="text-2xl">🐘</div><div class="text-[10px] text-white font-bold">ช้าง</div><div class="text-[9px] text-gray-400">4,000 kg</div>
+      </div>
+      <div class="tray-card glass-light rounded-xl px-3 py-2 flex flex-col items-center" data-kind="load" data-type="airplane">
+        <div class="text-2xl">✈️</div><div class="text-[10px] text-white font-bold">เครื่องบิน</div><div class="text-[9px] text-gray-400">20,000 kg</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+
+<!-- Ghost -->
+<div id="ghost" class="hidden"></div>
+
+<!-- Credit -->
+<div class="fixed bottom-3 right-3 z-30">
+  <div class="glass-light rounded-xl px-4 py-2.5 flex items-center gap-3 group hover:border-amber-500/50 transition cursor-pointer" style="background:rgba(15,20,35,.8);backdrop-filter:blur(12px);">
+    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xs skunkworks shadow-lg group-hover:scale-110 transition">S</div>
+    <div>
+      <div class="skunkworks text-[9px] text-gray-400 tracking-widest">CREATED BY</div>
+      <div class="skunkworks text-sm font-bold bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 bg-clip-text text-transparent glow-text">@SkunkworksNT</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ============================================================
+   PASCAL'S LAW HYDRAULIC LIFT LAB — @SkunkworksNT
+   Drag & Drop mass experiment, true Pascal physics (F1/A1 = F2/A2)
+============================================================ */
+const G = 9.8, A1 = 10, A2 = 100;             // cm²
+const SMALL_DOWN_MAX = 1.4, LARGE_DOWN_MAX = 2.15;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e1a);
+scene.fog = new THREE.Fog(0x0a0e1a, 26, 60);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, .1, 500);
+camera.position.set(0, 8.2, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08;
+controls.target.set(0, 5.2, 0);
+controls.minDistance = 7; controls.maxDistance = 26; controls.maxPolarAngle = Math.PI/2.05;
+
+/* ---------- Lights ---------- */
+scene.add(new THREE.AmbientLight(0x4a5568, .55));
+const sun = new THREE.DirectionalLight(0xfff5e6, 1.35);
+sun.position.set(10, 18, 8); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -15; sun.shadow.camera.right = 15;
+sun.shadow.camera.top = 15; sun.shadow.camera.bottom = -15;
+sun.shadow.bias = -0.0005; scene.add(sun);
+const fill = new THREE.DirectionalLight(0x60a5fa, .4); fill.position.set(-10, 8, -6); scene.add(fill);
+const rim  = new THREE.DirectionalLight(0xf59e0b, .5); rim.position.set(0, 5, -12); scene.add(rim);
+const spot = new THREE.SpotLight(0xfbbf24, .7, 35, Math.PI/6, .5);
+spot.position.set(0, 16, 6); scene.add(spot); scene.add(spot.target);
+spot.target.position.set(0, 4, 0);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120),
+  new THREE.MeshStandardMaterial({ color:0x0a0e1a, roughness:.95, metalness:.1 }));
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(44, 44, 0x1e293b, 0x0f172a); grid.position.y = .01; scene.add(grid);
+
+/* ---------- Wood texture ---------- */
+function woodTexture(base){
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0,0,512,0);
+  g.addColorStop(0, base); g.addColorStop(.5, shade(base,-14)); g.addColorStop(1, base);
+  x.fillStyle = g; x.fillRect(0,0,512,512);
+  x.strokeStyle = 'rgba(80,40,10,.2)'; x.lineWidth = 1;
+  for(let i=0;i<80;i++){ x.beginPath(); const y=Math.random()*512; x.moveTo(0,y);
+    for(let px=0;px<512;px+=15) x.lineTo(px, y + Math.sin(px*.015+i)*4 + (Math.random()-.5)*2);
+    x.stroke(); }
+  for(let i=0;i<4;i++){ const kx=Math.random()*512, ky=Math.random()*512;
+    const kg=x.createRadialGradient(kx,ky,0,kx,ky,20);
+    kg.addColorStop(0,'rgba(60,30,10,.5)'); kg.addColorStop(1,'rgba(60,30,10,0)');
+    x.fillStyle=kg; x.beginPath(); x.ellipse(kx,ky,20,10,Math.random()*Math.PI,0,Math.PI*2); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+function shade(hex,p){ const n=parseInt(hex.slice(1),16), a=Math.round(2.55*p);
+  const R=Math.max(0,Math.min(255,(n>>16)+a)), Gc=Math.max(0,Math.min(255,((n>>8)&255)+a)), B=Math.max(0,Math.min(255,(n&255)+a));
+  return '#'+((1<<24)+(R<<16)+(Gc<<8)+B).toString(16).slice(1); }
+
+const woodTex = woodTexture('#d4a574');
+const woodMat = new THREE.MeshStandardMaterial({ map:woodTex, roughness:.65, metalness:.05 });
+const darkWoodMat = new THREE.MeshStandardMaterial({ map:woodTexture('#a07040'), roughness:.7, metalness:.05 });
+
+/* ---------- Apparatus frame (match photo) ---------- */
+const apparatus = new THREE.Group(); scene.add(apparatus);
+const BASE_W=9.6, BASE_D=3.2, BASE_H=.5, POST_H=6.2, POST_W=.55, POST_D=.7, BEAM_H=.7;
+const BEAM_TOP = BASE_H + POST_H + BEAM_H;          // 7.4
+const SYR_TOP  = BEAM_TOP - BEAM_H;                 // 6.7 (syringe hangs below beam)
+const SYR_H = 3.6;
+const X_SMALL = -2.6, X_LARGE = 2.6;
+const R_SMALL = .42, R_LARGE = 1.05;
+
+const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(BASE_W, BASE_H, BASE_D), woodMat);
+baseMesh.position.y = BASE_H/2; baseMesh.castShadow = baseMesh.receiveShadow = true; apparatus.add(baseMesh);
+const baseEdge = new THREE.Mesh(new THREE.BoxGeometry(BASE_W+.1, .08, BASE_D+.1), darkWoodMat);
+baseEdge.position.y = BASE_H+.04; apparatus.add(baseEdge);
+const footMat = new THREE.MeshStandardMaterial({ color:0x111111, roughness:.95 });
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz])=>{
+  const f = new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,.12,16), footMat);
+  f.position.set(sx*(BASE_W/2-.5), .06, sz*(BASE_D/2-.4)); f.castShadow = true; apparatus.add(f);
+});
+const postGeo = new THREE.BoxGeometry(POST_W, POST_H, POST_D);
+[-4.1, 4.1].forEach(px=>{
+  const p = new THREE.Mesh(postGeo, woodMat);
+  p.position.set(px, BASE_H+POST_H/2, 0); p.castShadow = p.receiveShadow = true; apparatus.add(p);
+});
+const beam = new THREE.Mesh(new THREE.BoxGeometry(BASE_W+.2, BEAM_H, 1.15), woodMat);
+beam.position.y = BASE_H+POST_H+BEAM_H/2; beam.castShadow = beam.receiveShadow = true; apparatus.add(beam);
+const beamEdge = new THREE.Mesh(new THREE.BoxGeometry(BASE_W+.3, .06, 1.25), darkWoodMat);
+beamEdge.position.y = BEAM_TOP+.03; apparatus.add(beamEdge);
+
+/* ---------- Materials ---------- */
+const glassMat = new THREE.MeshPhysicalMaterial({ color:0xffffff, transparent:true, opacity:.28,
+  roughness:.05, metalness:.1, clearcoat:1, clearcoatRoughness:.05, transmission:.7, side:THREE.DoubleSide });
+const oilMat = new THREE.MeshPhysicalMaterial({ color:0xd97706, transparent:true, opacity:.88,
+  roughness:.15, clearcoat:.8, transmission:.2 });
+const knobWood = new THREE.MeshStandardMaterial({ map:woodTex, roughness:.55, color:0xc8956a });
+const metalMat = new THREE.MeshStandardMaterial({ color:0x9a9a9a, roughness:.25, metalness:.95 });
+const rubberMat = new THREE.MeshStandardMaterial({ color:0x151515, roughness:.92 });
+const brassMat = new THREE.MeshStandardMaterial({ color:0xd4af37, metalness:.85, roughness:.25 });
+
+/* ---------- Syringe builder ---------- */
+function buildSyringe(xPos, radius, platR){
+  const grp = new THREE.Group(); grp.position.set(xPos, SYR_TOP, 0);
+
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(radius+.14, radius+.14, .3, 32), metalMat);
+  collar.position.y = BEAM_TOP - SYR_TOP + .05; grp.add(collar);          // metal ring through beam
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, SYR_H, 40, 1, true), glassMat);
+  body.position.y = -SYR_H/2; grp.add(body);
+  const botCap = new THREE.Mesh(new THREE.CylinderGeometry(radius+.05, radius+.05, .12, 32), glassMat);
+  botCap.position.y = -SYR_H; grp.add(botCap);
+  const flange = new THREE.Mesh(new THREE.TorusGeometry(radius+.07, .06, 8, 40), glassMat);
+  flange.rotation.x = Math.PI/2; grp.add(flange);
+
+  const oil = new THREE.Mesh(new THREE.CylinderGeometry(radius-.03, radius-.03, 1, 32), oilMat);
+  grp.add(oil);
+
+  // movable assembly: piston + rod + knob + platform + stack
+  const movable = new THREE.Group(); grp.add(movable);
+  const piston = new THREE.Mesh(new THREE.CylinderGeometry(radius-.04, radius-.04, .35, 32), rubberMat);
+  piston.position.y = -.45; movable.add(piston);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, 1.5, 16), metalMat);
+  rod.position.y = .35; movable.add(rod);
+  const knob = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(platR*.62,.8), Math.max(platR*.6,.75), .45, 32), knobWood);
+  knob.position.y = 1.05; knob.castShadow = true; movable.add(knob);
+  const knobTop = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(platR*.62,.8)*.75, Math.max(platR*.6,.75)*.85, .1, 32), knobWood);
+  knobTop.position.y = 1.32; movable.add(knobTop);
+
+  const platform = new THREE.Mesh(new THREE.CylinderGeometry(platR, platR, .12, 40),
+    new THREE.MeshStandardMaterial({ color:0x2b3446, roughness:.5, metalness:.6 }));
+  platform.position.y = 1.62; platform.castShadow = true; movable.add(platform);
+  const platRing = new THREE.Mesh(new THREE.TorusGeometry(platR-.02, .035, 8, 40),
+    new THREE.MeshStandardMaterial({ color:0xf59e0b, roughness:.4, metalness:.6, emissive:0x000000 }));
+  platRing.rotation.x = Math.PI/2; platRing.position.y = 1.68; movable.add(platRing);
+
+  const stack = new THREE.Group(); stack.position.y = 1.68; movable.add(stack);
+
+  // invisible drop collider above platform
+  const collider = new THREE.Mesh(new THREE.CylinderGeometry(platR+.35, platR+.35, 5, 12),
+    new THREE.MeshBasicMaterial({ visible:false }));
+  collider.position.y = 1.68 + 2.5; movable.add(collider);
+
+  // hint sprite
+  const hint = makeTextSprite('วางที่นี่', 'rgba(245,158,11,.85)', '#fff', 40);
+  hint.position.y = 2.6; hint.scale.set(1.5, .75, 1); movable.add(hint);
+
+  apparatus.add(grp);
+  return { grp, oil, movable, piston, platform, platRing, stack, collider, hint, radius };
+}
+
+function makeTextSprite(text, bg, fg, font){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = bg; roundRect(x, 8, 28, 240, 72, 18); x.fill();
+  x.fillStyle = fg; x.font = 'bold ' + (font||44) + 'px "Noto Sans Thai"'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 128, 66);
+  const t = new THREE.CanvasTexture(c);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, transparent:true, depthTest:false }));
+  s.scale.set(1.6, .8, 1); return s;
+}
+function roundRect(x, a, b, w, h, r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r);
+  x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+
+const sideSmall = buildSyringe(X_SMALL, R_SMALL, .95);
+const sideLarge = buildSyringe(X_LARGE, R_LARGE, 1.7);
+
+/* ---------- OIL HOSE connecting both cylinder bottoms (fixed!) ---------- */
+const hoseMat = new THREE.MeshStandardMaterial({ color:0xe8e8e0, roughness:.75 });
+(function buildHose(){
+  const yB = SYR_TOP - SYR_H;                       // bottom of cylinders
+  const pts = [
+    new THREE.Vector3(X_SMALL, yB+.05, 0),
+    new THREE.Vector3(X_SMALL, yB-.55, .18),
+    new THREE.Vector3(X_SMALL*.55, yB-1.15, .42),
+    new THREE.Vector3(0,         yB-1.35, .5),
+    new THREE.Vector3(X_LARGE*.55, yB-1.15, .42),
+    new THREE.Vector3(X_LARGE, yB-.55, .18),
+    new THREE.Vector3(X_LARGE, yB+.05, 0)
+  ];
+  const hose = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 72, .13, 14, false), hoseMat);
+  hose.castShadow = true; scene.add(hose);
+  [X_SMALL, X_LARGE].forEach(px=>{
+    const fit = new THREE.Mesh(new THREE.CylinderGeometry(.2, .26, .35, 20), brassMat);
+    fit.position.set(px, yB+.12, 0); scene.add(fit);
+  });
+})();
+
+/* ---------- Oil bottle (photo prop) ---------- */
+(function bottle(){
+  const g = new THREE.Group(); g.position.set(6.6, 0, 2.4);
+  const bm = new THREE.MeshPhysicalMaterial({ color:0x8b4513, transparent:true, opacity:.78, roughness:.08, clearcoat:1, transmission:.4 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(.55,.6,2,32), bm); body.position.y=1; body.castShadow=true; g.add(body);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(.3,.38,.5,32), bm); neck.position.y=2.25; g.add(neck);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.35,32), metalMat); cap.position.y=2.6; cap.castShadow=true; g.add(cap);
+  const c = document.createElement('canvas'); c.width=256; c.height=128; const x=c.getContext('2d');
+  x.fillStyle='#fef3c7'; x.fillRect(0,0,256,128); x.strokeStyle='#92400e'; x.lineWidth=4; x.strokeRect(10,10,236,108);
+  x.fillStyle='#78350f'; x.font='bold 30px serif'; x.textAlign='center'; x.fillText('Hydraulic',128,52); x.fillText('Oil',128,90);
+  const lab = new THREE.Mesh(new THREE.CylinderGeometry(.57,.57,1,32,1,true),
+    new THREE.MeshStandardMaterial({ map:new THREE.CanvasTexture(c), transparent:true }));
+  lab.position.y=1; g.add(lab); scene.add(g);
+})();
+
+/* ============================================================
+   DRAGGABLE ITEMS
+============================================================ */
+const BLOCK_DEF = {
+  1:    { size:.34, color:'#60a5fa' },
+  10:   { size:.46, color:'#34d399' },
+  50:   { size:.60, color:'#fbbf24' },
+  100:  { size:.72, color:'#f59e0b' },
+  500:  { size:.90, color:'#f472b6' },
+  1000: { size:1.06, color:'#a78bfa' }
+};
+const LOAD_DEF = {
+  motorcycle: { mass:200,   h:.95, name:'มอเตอไซค์' },
+  car:        { mass:1500,  h:1.25, name:'รถยนต์' },
+  elephant:   { mass:4000,  h:1.55, name:'ช้าง' },
+  airplane:   { mass:20000, h:1.35, name:'เครื่องบิน' }
+};
+
+const blockTexCache = {};
+function blockTexture(mass){
+  if(blockTexCache[mass]) return blockTexCache[mass];
+  const col = BLOCK_DEF[mass].color;
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = col; x.fillRect(0,0,256,256);
+  x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 14; x.strokeRect(7,7,242,242);
+  x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(14,14,228,40);
+  x.fillStyle = '#fff'; x.textAlign = 'center';
+  x.font = 'bold 52px "Noto Sans Thai"'; x.fillText('ส.น.ว.', 128, 108);
+  x.font = 'bold 62px "Noto Sans Thai"'; x.fillText(mass.toLocaleString('th-TH')+' kg', 128, 190);
+  const t = new THREE.CanvasTexture(c); blockTexCache[mass] = t; return t;
+}
+
+function buildBlock(mass){
+  const s = BLOCK_DEF[mass].size;
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, s),
+    new THREE.MeshStandardMaterial({ map:blockTexture(mass), roughness:.6 }));
+  m.position.y = s/2; m.castShadow = true; g.add(m);
+  g.userData.h = s;
+  return g;
+}
+
+function metal(color, rough, metalN){ return new THREE.MeshStandardMaterial({ color, roughness:rough===undefined?.5:rough, metalness:metalN===undefined?.4:metalN }); }
+function addM(g, geo, mat, x, y, z, rx, ry, rz){
+  const m = new THREE.Mesh(geo, mat); m.position.set(x||0, y||0, z||0);
+  if(rx) m.rotation.x = rx; if(ry) m.rotation.y = ry; if(rz) m.rotation.z = rz;
+  m.castShadow = true; g.add(m); return m;
+}
+
+function buildMotorcycle(){
+  const g = new THREE.Group();
+  const wheel = metal(0x111111, .9, .1), body = metal(0xef4444, .35, .7), chr = metal(0xcccccc, .2, .95);
+  addM(g, new THREE.CylinderGeometry(.34,.34,.14,24), wheel, .62,.34,0, Math.PI/2);
+  addM(g, new THREE.CylinderGeometry(.34,.34,.14,24), wheel, -.62,.34,0, Math.PI/2);
+  addM(g, new THREE.BoxGeometry(.85,.22,.3), body, 0,.68,0, 0,0,-.12);
+  const tank = addM(g, new THREE.SphereGeometry(.22,20,16), body, .18,.86,0); tank.scale.set(1.3,1,1);
+  addM(g, new THREE.BoxGeometry(.4,.1,.26), metal(0x1f2937,.8,.1), -.3,.86,0);
+  addM(g, new THREE.CylinderGeometry(.045,.045,.42,12), chr, .55,1.0,0, 0,0,.45);
+  addM(g, new THREE.CylinderGeometry(.04,.04,.55,12), chr, .68,1.12,0, Math.PI/2);
+  addM(g, new THREE.CylinderGeometry(.06,.06,.6,12), chr, -.35,.4,.2, 0,0,Math.PI/2);
+  g.userData.h = 1.0; return g;
+}
+function buildCar(){
+  const g = new THREE.Group();
+  const body = metal(0x3b82f6, .3, .75), glass = metal(0x0f172a, .15, .6), wheel = metal(0x111111, .9, .1);
+  addM(g, new THREE.BoxGeometry(2.05,.45,.95), body, 0,.62,0);
+  addM(g, new THREE.BoxGeometry(1.05,.4,.85), glass, -.08,1.02,0);
+  [[.72,.5],[.72,-.5],[-.72,.5],[-.72,-.5]].forEach(([x,z])=>
+    addM(g, new THREE.CylinderGeometry(.28,.28,.16,20), wheel, x,.28,z, Math.PI/2));
+  const hl = new THREE.MeshStandardMaterial({ color:0xfef3c7, emissive:0xfef3c7, emissiveIntensity:.6 });
+  addM(g, new THREE.SphereGeometry(.09,12,12), hl, 1.02,.62,.3);
+  addM(g, new THREE.SphereGeometry(.09,12,12), hl, 1.02,.62,-.3);
+  g.userData.h = 1.25; return g;
+}
+function buildElephant(){
+  const g = new THREE.Group();
+  const skin = metal(0x94a3b8, .9, .05);
+  const body = addM(g, new THREE.SphereGeometry(.72,24,18), skin, -.2,.95,0); body.scale.set(1.2,.9,.85);
+  addM(g, new THREE.SphereGeometry(.48,24,18), skin, .78,1.15,0);
+  const trunkPts = [new THREE.Vector3(1.05,1.05,0), new THREE.Vector3(1.28,.75,0), new THREE.Vector3(1.32,.4,.06), new THREE.Vector3(1.22,.12,.12)];
+  addM(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(trunkPts), 24, .11, 10), skin, 0,0,0);
+  [[.25,.35],[.25,-.35],[-.65,.35],[-.65,-.35]].forEach(([x,z])=>
+    addM(g, new THREE.CylinderGeometry(.17,.19,.7,14), skin, x,.35,z));
+  const e1 = addM(g, new THREE.SphereGeometry(.3,16,12), skin, .68,1.25,.42); e1.scale.set(.35,1,.85);
+  const e2 = addM(g, new THREE.SphereGeometry(.3,16,12), skin, .68,1.25,-.42); e2.scale.set(.35,1,.85);
+  g.userData.h = 1.55; return g;
+}
+function buildAirplane(){
+  const g = new THREE.Group();
+  const fus = metal(0xf8fafc, .25, .5), acc = metal(0xf59e0b, .4, .5), glass = metal(0x0ea5e9, .15, .7);
+  addM(g, new THREE.CylinderGeometry(.24,.24,2.0,24), fus, 0,.55,0, 0,0,Math.PI/2);
+  const nose = addM(g, new THREE.SphereGeometry(.24,20,16), glass, 1.0,.55,0); nose.scale.set(1.5,1,1);
+  addM(g, new THREE.ConeGeometry(.24,.5,20), fus, -1.2,.6,0, 0,0,-Math.PI/2);
+  addM(g, new THREE.BoxGeometry(.6,.06,2.5), fus, .05,.55,0);
+  addM(g, new THREE.BoxGeometry(.32,.05,1.0), fus, -1.0,.62,0);
+  addM(g, new THREE.BoxGeometry(.4,.55,.07), acc, -1.0,1.0,0, 0,0,.3);
+  addM(g, new THREE.CylinderGeometry(.245,.245,.14,24), acc, .55,.55,0, 0,0,Math.PI/2);
+  g.userData.h = 1.35; return g;
+}
+const LOAD_BUILD = { motorcycle:buildMotorcycle, car:buildCar, elephant:buildElephant, airplane:buildAirplane };
+
+function buildItem(item){
+  let g;
+  if(item.kind === 'block') g = buildBlock(item.mass);
+  else g = LOAD_BUILD[item.type]();
+  if(item.kind === 'load'){
+    const lab = makeTextSprite(LOAD_DEF[item.type].mass.toLocaleString('th-TH')+' kg', 'rgba(15,23,42,.85)', '#fbbf24', 44);
+    lab.position.y = g.userData.h + .45; lab.scale.set(1.5,.75,1); g.add(lab);
+  }
+  g.traverse(o=>{ o.userData.itemId = item.id; });
+  g.userData.itemId = item.id;
+  return g;
+}
+
+/* ============================================================
+   STATE + STACKING
+============================================================ */
+let uid = 0;
+const sides = {
+  small: { ref:sideSmall, items:[] },
+  large: { ref:sideLarge, items:[] }
+};
+let curSmallDown = 0, curLargeDown = LARGE_DOWN_MAX;
+let prevLifted = false;
+const records = {};
+
+function totalMass(side){ return sides[side].items.reduce((s,i)=>s+i.mass, 0); }
+
+function rebuildSide(key){
+  const S = sides[key];
+  while(S.ref.stack.children.length) S.ref.stack.remove(S.ref.stack.children[0]);
+  let y = 0;
+  S.items.forEach(item=>{
+    const mesh = buildItem(item);
+    mesh.position.y = y;
+    S.ref.stack.add(mesh);
+    y += item.h + .02;
+  });
+  S.ref.hint.visible = (S.items.length === 0);
+}
+
+function physicsTargets(){
+  const m1 = totalMass('small'), M = totalMass('large');
+  const lifted = (M === 0) ? (m1 > 0) : (m1 >= M/10 - 1e-9);
+  return { m1, M, lifted,
+    smallDown: lifted ? SMALL_DOWN_MAX : 0,
+    largeDown: lifted ? 0 : LARGE_DOWN_MAX };
+}
+
+function refreshStatus(){
+  const { m1, M, lifted } = physicsTargets();
+  const P1 = m1*G/A1*10, P2 = M*G/A2*10;
+  document.getElementById('s-m1').textContent = m1.toLocaleString('th-TH');
+  document.getElementById('s-M').textContent  = M.toLocaleString('th-TH');
+  document.getElementById('s-p1').textContent = P1.toLocaleString('th-TH',{maximumFractionDigits:0});
+  document.getElementById('s-p2').textContent = P2.toLocaleString('th-TH',{maximumFractionDigits:0});
+  const need = M/10;
+  document.getElementById('s-need').textContent = need.toLocaleString('th-TH',{maximumFractionDigits:1});
+  const badge = document.getElementById('s-badge');
+  badge.textContent = lifted ? 'ยกขึ้นแล้ว!' : 'ยังไม่ยก';
+  badge.className = (lifted ? 'badge-lift' : 'badge-hold') + ' text-[10px] px-2 py-0.5 rounded-full font-bold';
+  const hint = document.getElementById('s-hint');
+  if(M === 0) hint.innerHTML = m1>0 ? 'ฝั่งใหญ่ว่าง — ลากวัตถุมาวางเพื่อเริ่มทดลอง' : 'ลากก้อนมวล/วัตถุจากถาดด้านล่างไปวางบนแท่น';
+  else if(!lifted) hint.innerHTML = 'เพิ่มก้อนมวลอีก <b class="text-amber-400">'+(need-m1).toLocaleString('th-TH',{maximumFractionDigits:1})+' kg</b> จึงจะยก <b class="text-red-300">'+(need).toLocaleString('th-TH')+'/'+ '10</b> ...';
+  else hint.innerHTML = 'P₁ ≥ P₂ → วัตถุฝั่งใหญ่ถูกยกขึ้นแล้ว! 🎉';
+  if(M>0){
+    hint.innerHTML = !lifted
+      ? 'เพิ่มอีก <b class="text-amber-400">'+(need-m1).toLocaleString('th-TH',{maximumFractionDigits:1})+' kg</b> (มี '+m1.toLocaleString('th-TH')+' / ต้อง ≥ '+need.toLocaleString('th-TH')+' kg)'
+      : 'ผ่านเกณฑ์! m₁ = '+m1.toLocaleString('th-TH')+' kg ≥ '+need.toLocaleString('th-TH')+' kg 🎉';
+  }
+  const rec = records[M];
+  document.getElementById('s-record').textContent = rec
+    ? rec.m1.toLocaleString('th-TH')+' kg (ยกภาระ '+M.toLocaleString('th-TH')+' kg)' : '—';
+}
+
+function toast(msg, color){
+  const box = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast glass panel rounded-xl px-4 py-2 text-sm text-white';
+  t.style.border = '1px solid '+(color||'#f59e0b');
+  t.innerHTML = msg;
+  box.appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(()=>t.remove(), 400); }, 2600);
+}
+
+/* ============================================================
+   DRAG & DROP
+============================================================ */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const ghostEl = document.getElementById('ghost');
+let ghost = null;            // {kind, mass, type, fromPlaced}
+let hoverSide = null;
+
+function ghostHTML(g){
+  if(g.kind === 'block')
+    return '<div class="glass panel rounded-xl px-3 py-2 flex items-center gap-2"><div class="w-8 h-8 rounded" style="background:'+BLOCK_DEF[g.mass].color+'"></div><div class="text-xs text-white font-bold">ส.น.ว. '+g.mass.toLocaleString('th-TH')+' kg</div></div>';
+  const em = { motorcycle:'🏍️', car:'🚗', elephant:'🐘', airplane:'✈️' }[g.type];
+  return '<div class="glass panel rounded-xl px-3 py-2 flex items-center gap-2"><div class="text-2xl">'+em+'</div><div class="text-xs text-white font-bold">'+LOAD_DEF[g.type].name+' '+LOAD_DEF[g.type].mass.toLocaleString('th-TH')+' kg</div></div>';
+}
+function startGhost(g, x, y){
+  ghost = g; ghostEl.innerHTML = ghostHTML(g); ghostEl.classList.remove('hidden');
+  moveGhost(x, y); controls.enabled = false;
+}
+function moveGhost(x, y){ ghostEl.style.left = x+'px'; ghostEl.style.top = y+'px'; }
+
+function pickSide(cx, cy){
+  pointer.x = (cx/innerWidth)*2 - 1; pointer.y = -(cy/innerHeight)*2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects([sideSmall.collider, sideLarge.collider], false);
+  if(!hits.length) return null;
+  return hits[0].object === sideSmall.collider ? 'small' : 'large';
+}
+function setHover(side){
+  if(hoverSide === side) return;
+  if(hoverSide) sides[hoverSide].ref.platRing.material.emissive.setHex(0x000000);
+  hoverSide = side;
+  if(hoverSide){
+    sides[hoverSide].ref.platRing.material.emissive.setHex(0xf59e0b);
+    sides[hoverSide].ref.platRing.material.emissiveIntensity = .9;
+  }
+}
+
+function findItemRoot(obj){
+  let o = obj;
+  while(o){ if(o.userData && o.userData.itemId !== undefined) return o; o = o.parent; }
+  return null;
+}
+function removeItemById(id){
+  for(const key of ['small','large']){
+    const idx = sides[key].items.findIndex(i=>i.id === id);
+    if(idx >= 0){ const it = sides[key].items.splice(idx,1)[0]; rebuildSide(key); return it; }
+  }
+  return null;
+}
+
+document.querySelectorAll('.tray-card').forEach(card=>{
+  card.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    const kind = card.dataset.kind;
+    const g = kind === 'block'
+      ? { kind:'block', mass:+card.dataset.mass, h:BLOCK_DEF[+card.dataset.mass].size, fromPlaced:false }
+      : { kind:'load', type:card.dataset.type, mass:LOAD_DEF[card.dataset.type].mass, h:LOAD_DEF[card.dataset.type].h, fromPlaced:false };
+    startGhost(g, e.clientX, e.clientY);
+  });
+});
+
+renderer.domElement.addEventListener('pointerdown', e=>{
+  pointer.x = (e.clientX/innerWidth)*2 - 1; pointer.y = -(e.clientY/innerHeight)*2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const roots = [sideSmall.stack, sideLarge.stack];
+  const hits = raycaster.intersectObjects(roots, true);
+  if(hits.length){
+    const root = findItemRoot(hits[0].object);
+    if(root){
+      const item = removeItemById(root.userData.itemId);
+      if(item){ startGhost(Object.assign({}, item, { fromPlaced:true }), e.clientX, e.clientY); }
+    }
+  }
+});
+
+window.addEventListener('pointermove', e=>{
+  if(!ghost) return;
+  moveGhost(e.clientX, e.clientY);
+  setHover(pickSide(e.clientX, e.clientY));
+});
+
+window.addEventListener('pointerup', e=>{
+  if(!ghost) return;
+  const side = pickSide(e.clientX, e.clientY);
+  const trayRect = document.getElementById('tray').getBoundingClientRect();
+  const overTray = e.clientY >= trayRect.top - 6;
+  if(side){
+    const item = { id:uid++, kind:ghost.kind, mass:ghost.mass };
+    if(ghost.kind === 'load') item.type = ghost.type;
+    item.h = ghost.h;
+    sides[side].items.push(item);
+    rebuildSide(side);
+    toast('📦 วาง '+ (ghost.kind==='block' ? 'ก้อน ส.น.ว. '+ghost.mass.toLocaleString('th-TH')+' kg' : LOAD_DEF[ghost.type].name) +' บนฝั่ง'+(side==='small'?'เล็ก':'ใหญ่'), '#3b82f6');
+  } else if(overTray){
+    /* กลับถาด = ยกเลิก */
+  } else if(ghost.fromPlaced){
+    toast('🗑 นำวัตถุออกจากแท่นแล้ว', '#ef4444');
+  }
+  ghost = null; ghostEl.classList.add('hidden');
+  setHover(null); controls.enabled = true;
+  refreshStatus();
+});
+
+/* ---------- Buttons ---------- */
+document.getElementById('btn-clear').addEventListener('click', ()=>{
+  sides.small.items = []; sides.large.items = [];
+  rebuildSide('small'); rebuildSide('large'); refreshStatus();
+  toast('🧹 ล้างแท่นทดลองทั้งสองฝั่งแล้ว', '#f59e0b');
+});
+document.getElementById('btn-view').addEventListener('click', ()=>{
+  camera.position.set(0, 8.2, 15); controls.target.set(0, 5.2, 0);
+});
+document.getElementById('fullscreen-btn').addEventListener('click', ()=>{
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+});
+
+/* ============================================================
+   LOOP
+============================================================ */
+rebuildSide('small'); rebuildSide('large'); refreshStatus();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const t = physicsTargets();
+
+  curSmallDown += (t.smallDown - curSmallDown) * .06;
+  curLargeDown += (t.largeDown - curLargeDown) * .06;
+  sideSmall.movable.position.y = -curSmallDown;
+  sideLarge.movable.position.y = -curLargeDown;
+
+  // oil columns follow pistons
+  const sPist = -.45 - curSmallDown, lPist = -.45 - curLargeDown;
+  const sH = Math.max(.2, (sPist) - (-SYR_H) - .1);
+  sideSmall.oil.geometry.dispose();
+  sideSmall.oil.geometry = new THREE.CylinderGeometry(R_SMALL-.03, R_SMALL-.03, sH, 32);
+  sideSmall.oil.position.y = -SYR_H + sH/2 + .05;
+  const lH = Math.max(.2, (lPist) - (-SYR_H) - .1);
+  sideLarge.oil.geometry.dispose();
+  sideLarge.oil.geometry = new THREE.CylinderGeometry(R_LARGE-.03, R_LARGE-.03, lH, 32);
+  sideLarge.oil.position.y = -SYR_H + lH/2 + .05;
+
+  // lift transition → toast + record
+  if(t.lifted !== prevLifted){
+    if(t.lifted && t.M > 0){
+      const need = t.M/10;
+      if(!records[t.M] || records[t.M].m1 > t.m1) records[t.M] = { m1:t.m1 };
+      toast('🎉 <b>ยกขึ้น!</b> m₁ = '+t.m1.toLocaleString('th-TH')+' kg ≥ เกณฑ์ '+need.toLocaleString('th-TH')+' kg', '#22c55e');
+      refreshStatus();
+    } else if(!t.lifted && t.M > 0){
+      toast('⬇ ยังยกไม่ขึ้น — P₁ &lt; P₂ เพิ่มก้อนมวลฝั่งเล็กอีก', '#ef4444');
+      refreshStatus();
+    }
+    prevLifted = t.lifted;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
