@@ -895,6 +895,8 @@ function findStuItem(subject, room, studentName) {
   return null;
 }
 
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 let LR = (() => {
   try {
     const saved = localStorage.getItem('custom_learning_resources');
