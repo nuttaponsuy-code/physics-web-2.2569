@@ -536,7 +536,7 @@ tr { cursor: pointer; transition: background .15s; }
       <input type="file" class="fc" id="impRosterFile" accept=".csv,text/csv" style="margin-bottom:12px;">
       <div id="impRosterPreview"></div>
       <button class="btn btn-p btn-lg" id="impRosterBtn" style="display:none;margin-top:14px;" onclick="App.saveImportRoster()">เริ่มนำเข้า</button>
-      <button class="btn btn-o btn-sm" style="width:100%;margin-top:12px;" onclick="App.resetRosterDefault()">🔄 คืนค่ารายชื่อเริ่มต้นจาก app-config.js</button>
+      <button class="btn btn-o btn-sm" style="width:100%;margin-top:12px;" onclick="App.resetRosterDefault()">🧹 ล้างรายชื่อที่นำเข้าและคืนค่ารายวิชาเริ่มต้น</button>
     </div>
   </div>
 </div>
@@ -862,12 +862,16 @@ tr { cursor: pointer; transition: background .15s; }
 /* DYNAMIC CONFIG LOADER */
 const CFG = window.APP_CONFIG || {};
 
+function createEmptyRoster() {
+  return Object.fromEntries((CFG.subjects || []).map(subject => [subject, {}]));
+}
+
 let STUDENTS = (() => {
   try {
     const saved = localStorage.getItem('custom_students_roster');
     if (saved) return JSON.parse(saved);
   } catch(e) {}
-  return CFG.students || {};
+  return createEmptyRoster();
 })();
 
 /* STUDENT HELPER FUNCTIONS */
@@ -1621,8 +1625,8 @@ var App={
   resetRosterDefault: () => {
     try {
       localStorage.removeItem('custom_students_roster');
-      STUDENTS = (window.APP_CONFIG && window.APP_CONFIG.students) ? window.APP_CONFIG.students : {};
-      UI.toast('คืนค่ารายชื่อนักเรียนเริ่มต้นเรียบร้อยแล้ว', 'ok');
+      STUDENTS = Object.fromEntries(((window.APP_CONFIG && window.APP_CONFIG.subjects) || []).map(subject => [subject, {}]));
+      UI.toast('ล้างรายชื่อที่นำเข้าแล้ว และคืนค่ารายวิชาเริ่มต้นเรียบร้อยแล้ว', 'ok');
       closeM('mImportRoster');
       App.renderSubjGrid();
       App.renderSubjTabs();
@@ -1634,7 +1638,7 @@ var App={
   },
 
   downloadRosterTemplate: () => {
-    const csv = "\uFEFFวิชา,ห้อง,เลขประจำตัว,ชื่อ-นามสกุล\nฟิสิกส์ 1,ม.4/1,10001,นายกิตติศักดิ์ มีดี\nฟิสิกส์ 1,ม.4/1,10002,นายชยกร สมพันธ์\nฟิสิกส์ 1,ม.4/1,10003,นางสาวกานดา นามดี\nฟิสิกส์ 1,ม.4/1,10004,นางสาวจันทร์เพ็ญ สอนคำ\nฟิสิกส์ 1,ม.4/2,10005,นายณปกร สำอางค์\nฟิสิกส์ 1,ม.4/2,10006,นายธีรวัฒน์ เกตไสย\nฟิสิกส์ 1,ม.4/2,10007,นางสาวกุลธิดา รัตน์ทอง\nฟิสิกส์ 1,ม.4/2,10008,นางสาววันวิสา ดวงเดือน\nเคมี 1,ม.4/1,10001,นายกิตติศักดิ์ มีดี\n";
+    const csv = "\uFEFFวิชา,ห้อง,เลขประจำตัว,ชื่อ-นามสกุล\n";
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'ตัวอย่างไฟล์นำเข้ารายชื่อนักเรียน.csv';

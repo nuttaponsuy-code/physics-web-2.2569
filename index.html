@@ -558,12 +558,17 @@ tr { cursor: pointer; transition: background .15s; }
   <div class="mo">
     <div class="mo-hdr"><div style="font-weight:700;font-size:1.05rem;">👥 นำเข้ารายชื่อนักเรียนจาก CSV</div><button class="btn btn-g btn-sm" onclick="closeM('mImportRoster')">✕</button></div>
     <div class="mo-con">
-      <div style="font-size:.78rem;color:var(--t3);margin-bottom:12px;line-height:1.6;">เลือกไฟล์ CSV ที่มีคอลัมน์: <b>วิชา, ห้อง, ชื่อ-นามสกุล</b> เพื่ออัปเดตรายชื่อนักเรียนของเทอมนี้เข้าสู่ระบบโดยไม่ต้องแก้โค้ด</div>
+      <div style="font-size:.78rem;color:var(--t3);margin-bottom:12px;line-height:1.6;">เลือกไฟล์ CSV ที่มีคอลัมน์: <b>วิชา, ห้อง, เลขประจำตัว, ชื่อ-นามสกุล</b> รายชื่อจะบันทึกใน Google Sheet โดยไม่ส่งรายชื่อทั้งห้องไปยังหน้าเว็บ</div>
       <button class="btn btn-g btn-sm" style="width:100%;margin-bottom:12px;" onclick="App.downloadRosterTemplate()">📥 ดาวน์โหลดไฟล์ตัวอย่าง CSV (Template)</button>
       <input type="file" class="fc" id="impRosterFile" accept=".csv,text/csv" style="margin-bottom:12px;">
       <div id="impRosterPreview"></div>
+      <div class="fg" style="margin-top:12px;">
+        <label class="lbl" for="rosterAdminPassword">รหัสผู้ดูแลรายชื่อ (ROSTER_ADMIN_PASSWORD)</label>
+        <input type="password" class="fc" id="rosterAdminPassword" autocomplete="current-password" placeholder="รหัสที่ตั้งใน Apps Script">
+      </div>
       <button class="btn btn-p btn-lg" id="impRosterBtn" style="display:none;margin-top:14px;" onclick="App.saveImportRoster()">เริ่มนำเข้า</button>
-      <button class="btn btn-o btn-sm" style="width:100%;margin-top:12px;" onclick="App.resetRosterDefault()">🔄 คืนค่ารายชื่อเริ่มต้นจาก app-config.js</button>
+      <button class="btn btn-g btn-sm" style="width:100%;margin-top:12px;" onclick="App.loadRosterFromSheet()">โหลดรายชื่อจาก Google Sheet</button>
+      <button class="btn btn-o btn-sm" style="width:100%;margin-top:8px;" onclick="App.resetRosterDefault()">🧹 ล้างรายชื่อจาก Google Sheet</button>
     </div>
   </div>
 </div>
@@ -752,15 +757,18 @@ tr { cursor: pointer; transition: background .15s; }
 
 
     <div class="gc" id="ss2" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">เลือกห้องเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(1)">← กลับ</button></div>
-      <div class="sg" id="roomList"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">กรอกห้องเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(1)">← กลับ</button></div>
+      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">กรอกชั้น/ห้องตามรูปแบบในรายชื่อ เช่น ม.5/1</div>
+      <input type="text" class="fc" id="roomIn" maxlength="100" placeholder="เช่น ม.5/1" style="margin-bottom:14px;">
+      <button class="btn btn-p btn-lg" onclick="App.confirmRoom()">ถัดไป</button>
     </div>
 
 
     <div class="gc" id="ss3" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">เลือกชื่อ-นามสกุล</div><button class="btn btn-g btn-sm" onclick="App.step(2)">← กลับ</button></div>
-      <select class="fc" id="stuSel" style="margin-bottom:16px;font-weight:600;font-size:1rem;"></select>
-      <button class="btn btn-p btn-lg" onclick="App.confStu()">ตกลง เข้าสู่ระบบ</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">ยืนยันตัวตนด้วยเลขประจำตัว</div><button class="btn btn-g btn-sm" onclick="App.step(2)">← กลับ</button></div>
+      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">ระบบจะตรวจรหัสกับ Google Sheet และแสดงเฉพาะชื่อของคุณ</div>
+      <input type="text" inputmode="numeric" class="fc" id="stuSel" maxlength="50" placeholder="เลขประจำตัวนักเรียน" style="margin-bottom:16px;font-weight:600;font-size:1rem;">
+      <button class="btn btn-p btn-lg" onclick="App.confStu()">ตรวจสอบและเข้าสู่ระบบ</button>
     </div>
 
 
@@ -966,12 +974,17 @@ tr { cursor: pointer; transition: background .15s; }
 /* DYNAMIC CONFIG LOADER */
 const CFG = window.APP_CONFIG || {};
 
+function createEmptyRoster() {
+  return Object.fromEntries((CFG.subjects || []).map(subject => [subject, {}]));
+}
+
 let STUDENTS = (() => {
   try {
+    if (localStorage.getItem('custom_students_roster_version') !== '2') return createEmptyRoster();
     const saved = localStorage.getItem('custom_students_roster');
     if (saved) return JSON.parse(saved);
   } catch(e) {}
-  return CFG.students || {};
+  return createEmptyRoster();
 })();
 
 /* STUDENT HELPER FUNCTIONS */
@@ -989,6 +1002,28 @@ function getStuId(item) {
   const str = String(item).trim();
   if (str.includes('|')) return str.split('|')[0].trim();
   return '';
+}
+
+function rosterNamesOnly(roster) {
+  const result = {};
+  Object.entries(roster || {}).forEach(([subject, rooms]) => {
+    result[subject] = {};
+    Object.entries(rooms || {}).forEach(([room, students]) => {
+      result[subject][room] = (students || []).map(getStuName);
+    });
+  });
+  return result;
+}
+
+function cacheRosterLocally(roster) {
+  try {
+    localStorage.setItem('custom_students_roster', JSON.stringify(roster));
+    localStorage.setItem('custom_students_roster_version','2');
+    return true;
+  } catch(error) {
+    console.error('Roster local cache failed', error);
+    return false;
+  }
 }
 
 function findStuItem(subject, room, studentName) {
@@ -1082,7 +1117,8 @@ const Res={
 
 /* STATE */
 let S={
-  asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
+  asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',studentId:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
+  rosterSummary:{},
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
   rId:null,rName:'',_dbt:null,_cached:false,
@@ -1211,6 +1247,7 @@ var App={
          if (cached) {
             const d = JSON.parse(cached);
             S.asns=d.asns||[];
+            S.rosterSummary=d.rosterSummary||{};
             const valid=new Set(S.asns.map(a=>a.name));
             const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
             S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
@@ -1224,6 +1261,7 @@ var App={
       if(d.error)throw new Error(d.error);
       try { localStorage.setItem('appDataCache', JSON.stringify(d)); } catch(e){}
       S.asns=d.asns||[];
+      S.rosterSummary=d.rosterSummary||{};
       const valid=new Set(S.asns.map(a=>a.name));
       const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
       S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
@@ -1233,20 +1271,22 @@ var App={
     }catch(e){if(show||forceLoad)UI.toast('เชื่อมต่อล้มเหลว: '+e,'er');}
     if(forceLoad)UI.load(false);
   },
-  refresh:()=>{if(S.stu)App.renderStuDash();App.renderTcDash();App.renderHomeStats();},
+  refresh:()=>{if(S.stu)App.renderStuDash();App.renderTcDash();App.renderHomeCourses();App.renderHomeStats();},
   renderHomeStats:()=>{
     if(!$('hcoStat1'))return; // ยังไม่อยู่หน้าแรก ไม่ต้องเรนเดอร์
     const subjects=Object.keys(STUDENTS);
-    let totalStu=0,totalAsn=0,totalRooms=0,totalSub=0,totalMax=0;
+    let totalStu=0,totalAsn=0,totalRooms=0,totalMax=0;
     subjects.forEach(sub=>{
       const asns=S.asns.filter(a=>a.subject===sub);
       totalAsn+=asns.length;
-      Object.entries(STUDENTS[sub]).forEach(([room,stus])=>{
-        totalRooms++;totalStu+=stus.length;
-        stus.forEach(stu=>{totalSub+=S.scuMap.get(`${sub}|${room}|${stu}`)||0;});
-        totalMax+=asns.length*stus.length;
-      });
+      const summary=S.rosterSummary[sub];
+      const localRooms=Object.values(STUDENTS[sub]||{}).reduce((sum,students)=>sum+students.length,0);
+      totalStu+=summary?Number(summary.students)||0:localRooms;
+      totalRooms+=summary?Number(summary.rooms)||0:Object.keys(STUDENTS[sub]||{}).length;
+      totalMax+=asns.length*(summary?Number(summary.students)||0:localRooms);
     });
+    const validAssignments=new Set(S.asns.map(assignment=>`${assignment.subject}|${assignment.name}`));
+    const totalSub=S.subs.filter(sub=>validAssignments.has(`${sub.subject}|${sub.assignment}`)).length;
     const pct=totalMax?Math.round(totalSub/totalMax*100):0;
     UI.h('hcoStat1',totalStu);
     UI.h('hcoStat2',totalAsn);
@@ -1268,16 +1308,31 @@ var App={
     [1,2,3,4,5].forEach(i=>{UI.hide('ss'+i);const s=$(i>4?'st4':'st'+i);if(s)s.classList.remove('active');});
     UI.show('ss'+n);const s=$(n>4?'st4':'st'+n);if(s)s.classList.add('active');
   },
-  selSubj:sj=>{S.subj=sj;App.renderRooms();App.step(2);},
-  renderRooms:()=>{
-    UI.h('roomList',Object.keys(STUDENTS[S.subj]).map(r=>`<div class="ai cl" style="justify-content:center;padding:13px;" onclick="App.selRoom('${r}')"><b style="font-size:.95rem;color:var(--t1);">${r}</b></div>`).join(''));
+  selSubj:sj=>{S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');App.step(2);},
+  confirmRoom:()=>{
+    const room=UI.v('roomIn').trim();
+    if(!room)return UI.toast('กรุณากรอกชั้น/ห้องเรียน','wn');
+    S.room=room;UI.sv('stuSel','');App.step(3);
   },
-  selRoom:r=>{S.room=r;UI.h('stuSel','<option value="">— เลือกชื่อ-นามสกุล —</option>'+STUDENTS[S.subj][r].map(n=>`<option value="${_esc(n)}">${_esc(getStuName(n))}</option>`).join(''));App.step(3);},
-  confStu:()=>{const n=UI.v('stuSel');if(!n)return UI.toast('กรุณาเลือกชื่อก่อนครับ','wn');S.stu=n;App.renderStuDash();App.step(4);},
+  confStu:async()=>{
+    const studentId=UI.v('stuSel').trim();
+    if(!studentId)return UI.toast('กรุณากรอกเลขประจำตัวนักเรียน','wn');
+    UI.load(true);
+    try{
+      const result=await API.call('verifyRosterStudent',{subject:S.subj,room:S.room,studentId});
+      if(result.error||!result.success||!result.name)throw new Error(result.error||'ตรวจสอบรายชื่อไม่สำเร็จ');
+      S.studentId=studentId;S.stu=result.name;
+      App.renderStuDash();App.step(4);
+    }catch(error){
+      UI.toast('ตรวจสอบรายชื่อไม่สำเร็จ: '+error.message,'er');
+    }finally{
+      UI.load(false);
+    }
+  },
 
 
   renderStuDash:()=>{
-    UI.h('dName',getStuName(S.stu));
+    $('dName').textContent=getStuName(S.stu);
     const stuKey = `unlocked_v2_${S.subj}_${S.room}_${S.stu}`;
     const isUnlocked = localStorage.getItem(stuKey) === 'true';
 
@@ -1607,7 +1662,7 @@ var App={
     if(tb3)tb3.className='stab'+(t==='ฟิสิกส์ 3'?' on':'');
     if(tb5)tb5.className='stab'+(t==='ฟิสิกส์ 5'?' on':'');
     var rf=$('roomF');
-    if(rf)UI.h('roomF','<option value="">— ดูทุกห้อง —</option>'+Object.keys(STUDENTS[t]).map(function(r){return '<option>'+r+'</option>';}).join(''));
+    if(rf)UI.h('roomF','<option value="">— ดูทุกห้อง —</option>'+Object.keys(STUDENTS[t]||{}).map(function(r){return '<option>'+r+'</option>';}).join(''));
     if($('pg-tc'))App.renderTcDash();
     var f=$('toolsFrame');
     if(f&&f.contentWindow)f.contentWindow.postMessage({type:'ttSubjectChange',subject:t},'*');
@@ -1616,9 +1671,10 @@ var App={
     if(!$('tcSubjN'))return;
     UI.h('tcSubjN',`(${S.tab})`);
     const asns=S.asns.filter(a=>a.subject===S.tab);
-    const allS=Object.values(STUDENTS[S.tab]).flat();
+    const roster=STUDENTS[S.tab]||{};
+    const allS=Object.values(roster).flat();
     let tS=0,tM=0;
-    Object.entries(STUDENTS[S.tab]).forEach(([room,stus])=>stus.forEach(stu=>{const ms=S.scuMap.get(`${S.tab}|${room}|${stu}`)||0;tS+=ms;if(ms<asns.length)tM++;}));
+    Object.entries(roster).forEach(([room,stus])=>stus.forEach(stu=>{const ms=S.scuMap.get(`${S.tab}|${room}|${stu}`)||0;tS+=ms;if(ms<asns.length)tM++;}));
     let tU=0;S.subs.forEach(s=>{if(s.subject===S.tab&&!S.giMap.has(`${s.subject}|${s.room}|${s.student}|${s.assignment}`))tU++;});
     UI.h('tcSum',`<div class="sc-card"><div class="sc-num" style="color:var(--cy)">${asns.length}</div><div class="sc-lbl">ชิ้นงานทั้งหมด</div></div><div class="sc-card"><div class="sc-num">${allS.length}</div><div class="sc-lbl">นักเรียนทั้งหมด</div></div><div class="sc-card" style="background:var(--ok-b);border-color:var(--ok-bd);"><div class="sc-num" style="color:var(--ok)">${tS}</div><div class="sc-lbl">ชิ้นงานที่ส่ง</div></div><div class="sc-card" style="background:var(--er-b);border-color:var(--er-bd);"><div class="sc-num" style="color:var(--er)">${tM}</div><div class="sc-lbl">คนที่ยังค้างส่ง</div></div><div class="sc-card" style="background:var(--wn-b);border-color:var(--wn-bd);"><div class="sc-num" style="color:var(--wn)">${tU}</div><div class="sc-lbl">รอตรวจ</div></div>`);
     const chs={};asns.forEach(a=>{const c=a.chapter||'1';if(!chs[c])chs[c]=[];chs[c].push(a);});
@@ -1779,9 +1835,10 @@ var App={
     }
     grid.innerHTML = subjs.map((sj, i) => {
       const rooms = Object.keys(STUDENTS[sj] || {});
-      const roomSummary = rooms.length
-        ? `${rooms.length} ห้องเรียน${rooms.length <= 3 ? ` · ${rooms.join(', ')}` : ''}`
-        : 'ยังไม่มีห้องเรียน';
+      const roomCount=Number(S.rosterSummary[sj]?.rooms)||rooms.length;
+      const roomSummary = roomCount
+        ? `${roomCount} ห้องเรียน · กรอกห้องและเลขประจำตัวเพื่อยืนยัน`
+        : 'กรอกห้องและเลขประจำตัวเพื่อยืนยัน';
       return `<article class="hco-course-card${i % 2 ? ' p5' : ''}">
         <div class="hco-course-icon" id="home-course-ico-${i}" aria-hidden="true"></div>
         <div class="hco-course-info">
@@ -1812,12 +1869,15 @@ var App={
 
   openImportRoster: () => {
     UI.sv('impRosterFile', ''); UI.h('impRosterPreview', '');
+    UI.sv('rosterAdminPassword','');
     const b = $('impRosterBtn'); if (b) b.style.display = 'none';
     S.impRosterObj = null;
     openM('mImportRoster');
   },
 
   parseImportRosterCSV: (text) => {
+    S.impRosterObj=null;
+    const importButton=$('impRosterBtn');if(importButton)importButton.style.display='none';
     const rows = App._csvParse(text);
     if (!rows.length) return UI.toast('ไฟล์ว่างเปล่าหรืออ่านไม่ได้', 'er');
     const header = rows[0].map(h => (h || '').trim());
@@ -1825,62 +1885,126 @@ var App={
     const iSubj = findCol('วิชา'), iRoom = findCol('ห้อง'), iName = findCol('ชื่อ');
     let iId = findCol('เลขประจำตัว');
     if (iId < 0) iId = findCol('รหัส');
-    if (iSubj < 0 || iRoom < 0 || iName < 0) {
-      UI.h('impRosterPreview', '<div style="color:var(--er);font-size:.85rem;padding:10px;">ไม่พบคอลัมน์ วิชา, ห้อง, ชื่อ-นามสกุล ในไฟล์นี้</div>');
+    if (iSubj < 0 || iRoom < 0 || iName < 0 || iId < 0) {
+      UI.h('impRosterPreview', '<div style="color:var(--er);font-size:.85rem;padding:10px;">ต้องมีคอลัมน์ วิชา, ห้อง, เลขประจำตัว และชื่อ-นามสกุล</div>');
+      const button=$('impRosterBtn');if(button)button.style.display='none';
       return;
     }
     const newStudents = {};
+    const seen = new Set();
     let totalCount = 0;
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i]; if (!r || !r.length || r.every(c => !(c || '').trim())) continue;
       const subject = (r[iSubj] || '').trim(), room = (r[iRoom] || '').trim(), name = (r[iName] || '').trim();
-      const stuId = iId >= 0 ? (r[iId] || '').trim() : '';
-      if (!subject || !room || !name) continue;
+      const stuId = (r[iId] || '').trim();
+      if (!subject || !room || !name || !stuId) {
+        UI.h('impRosterPreview', `<div style="color:var(--er);font-size:.85rem;padding:10px;">แถวที่ ${i+1} ข้อมูลไม่ครบ ต้องมีวิชา ห้อง เลขประจำตัว และชื่อ</div>`);
+        const button=$('impRosterBtn');if(button)button.style.display='none';
+        S.impRosterObj=null;
+        return;
+      }
+      const key=`${subject}|${room}|${stuId}`;
+      if(seen.has(key)){
+        UI.h('impRosterPreview', `<div style="color:var(--er);font-size:.85rem;padding:10px;">พบเลขประจำตัวซ้ำในวิชา/ห้องเดียวกัน: ${_esc(stuId)}</div>`);
+        const button=$('impRosterBtn');if(button)button.style.display='none';
+        S.impRosterObj=null;
+        return;
+      }
+      seen.add(key);
       if (!newStudents[subject]) newStudents[subject] = {};
       if (!newStudents[subject][room]) newStudents[subject][room] = [];
-      const itemVal = stuId ? `${stuId}|${name}` : name;
+      const itemVal = `${stuId}|${name}`;
       newStudents[subject][room].push(itemVal);
       totalCount++;
     }
+    if(!totalCount){
+      UI.h('impRosterPreview','<div style="color:var(--er);font-size:.85rem;padding:10px;">ไม่พบข้อมูลนักเรียนในไฟล์</div>');
+      const button=$('impRosterBtn');if(button)button.style.display='none';
+      S.impRosterObj=null;
+      return;
+    }
     S.impRosterObj = newStudents;
     const subjs = Object.keys(newStudents);
-    UI.h('impRosterPreview', `<div style="font-size:.82rem;padding:10px;background:var(--g0);border-radius:8px;"><b style="color:var(--ok);">✅ อ่านข้อมูลสำเร็จ ${totalCount} คน (${subjs.length} วิชา)</b><br><span style="color:var(--t3);font-size:.76rem;">วิชาที่พบ: ${subjs.join(', ')}</span></div>`);
+    UI.h('impRosterPreview', `<div style="font-size:.82rem;padding:10px;background:var(--g0);border-radius:8px;"><b style="color:var(--ok);">✅ อ่านข้อมูลสำเร็จ ${totalCount} คน (${subjs.length} วิชา)</b><br><span style="color:var(--t3);font-size:.76rem;">วิชาที่พบ: ${subjs.map(_esc).join(', ')}</span></div>`);
     const b = $('impRosterBtn'); if (b) b.style.display = 'block';
   },
 
-  saveImportRoster: () => {
+  saveImportRoster: async() => {
     if (!S.impRosterObj) return;
+    const adminPassword=UI.v('rosterAdminPassword');
+    if(!adminPassword)return UI.toast('กรุณากรอกรหัสผู้ดูแลรายชื่อ','wn');
+    UI.load(true);
     try {
-      STUDENTS = S.impRosterObj;
-      localStorage.setItem('custom_students_roster', JSON.stringify(STUDENTS));
-      UI.toast('บันทึกรายชื่อนักเรียนใหม่เรียบร้อยแล้ว', 'ok');
+      const result=await API.call('saveRoster',{roster:S.impRosterObj,adminPassword});
+      if(result.error||!result.success)throw new Error(result.error||'บันทึกรายชื่อไม่สำเร็จ');
+      STUDENTS = rosterNamesOnly(S.impRosterObj);
+      const cached=cacheRosterLocally(STUDENTS);
+      UI.toast(cached?'บันทึกรายชื่อนักเรียน '+result.imported+' คนลง Google Sheet แล้ว':'บันทึกลง Google Sheet แล้ว แต่บันทึกสำเนาในเบราว์เซอร์ไม่สำเร็จ',cached?'ok':'wn');
       closeM('mImportRoster');
       App.renderSubjGrid();
       App.renderSubjTabs();
       if (Object.keys(STUDENTS).length) App.setTab(Object.keys(STUDENTS)[0]);
       App.refresh();
     } catch (e) {
-      UI.toast('บันทึกไม่สำเร็จ: ' + e, 'er');
+      UI.toast('บันทึกรายชื่อไม่สำเร็จ: ' + e.message, 'er');
+    } finally {
+      UI.sv('rosterAdminPassword','');
+      UI.load(false);
     }
   },
 
-  resetRosterDefault: () => {
+  loadRosterFromSheet: async() => {
+    const adminPassword=UI.v('rosterAdminPassword');
+    if(!adminPassword)return UI.toast('กรุณากรอกรหัสผู้ดูแลรายชื่อ','wn');
+    UI.load(true);
     try {
-      localStorage.removeItem('custom_students_roster');
-      STUDENTS = (window.APP_CONFIG && window.APP_CONFIG.students) ? window.APP_CONFIG.students : {};
-      UI.toast('คืนค่ารายชื่อนักเรียนเริ่มต้นเรียบร้อยแล้ว', 'ok');
+      const result=await API.call('getRoster',{adminPassword});
+      if(result.error||!result.success||!result.roster)throw new Error(result.error||'โหลดรายชื่อไม่สำเร็จ');
+      STUDENTS=rosterNamesOnly(result.roster);
+      const cached=cacheRosterLocally(STUDENTS);
+      App.renderSubjGrid();App.renderSubjTabs();
+      if(Object.keys(STUDENTS).length)App.setTab(Object.keys(STUDENTS)[0]);
+      App.refresh();
+      UI.toast(cached?'โหลดรายชื่อจาก Google Sheet แล้ว':'โหลดแล้ว แต่บันทึกสำเนาในเบราว์เซอร์ไม่สำเร็จ',cached?'ok':'wn');
+    }catch(error){
+      UI.toast('โหลดรายชื่อไม่สำเร็จ: '+error.message,'er');
+    }finally{
+      UI.sv('rosterAdminPassword','');
+      UI.load(false);
+    }
+  },
+
+  resetRosterDefault: async() => {
+    const adminPassword=UI.v('rosterAdminPassword');
+    if(!adminPassword)return UI.toast('กรุณากรอกรหัสผู้ดูแลรายชื่อ','wn');
+    UI.load(true);
+    try {
+      const result=await API.call('clearRoster',{adminPassword});
+      if(result.error||!result.success)throw new Error(result.error||'ล้างรายชื่อไม่สำเร็จ');
+      let cached=true;
+      try{
+        localStorage.removeItem('custom_students_roster');
+        localStorage.setItem('custom_students_roster_version','2');
+      }catch(error){
+        cached=false;console.error('Roster local cache clear failed',error);
+      }
+      STUDENTS = createEmptyRoster();
+      UI.toast(cached?'ล้างรายชื่อใน Google Sheet แล้ว':'ล้าง Google Sheet แล้ว แต่ล้างสำเนาในเบราว์เซอร์ไม่สำเร็จ',cached?'ok':'wn');
       closeM('mImportRoster');
       App.renderSubjGrid();
       App.renderSubjTabs();
       if (Object.keys(STUDENTS).length) App.setTab(Object.keys(STUDENTS)[0]);
       App.refresh();
     } catch (e) {
-      UI.toast('คืนค่าไม่สำเร็จ', 'er');
+      UI.toast('ล้างรายชื่อไม่สำเร็จ: '+e.message,'er');
+    }finally{
+      UI.sv('rosterAdminPassword','');
+      UI.load(false);
     }
   },
 
   downloadRosterTemplate: () => {
-    const csv = "\uFEFFวิชา,ห้อง,เลขประจำตัว,ชื่อ-นามสกุล\nฟิสิกส์ 1,ม.4/1,10001,นายกิตติศักดิ์ มีดี\nฟิสิกส์ 1,ม.4/1,10002,นายชยกร สมพันธ์\nฟิสิกส์ 1,ม.4/1,10003,นางสาวกานดา นามดี\nฟิสิกส์ 1,ม.4/1,10004,นางสาวจันทร์เพ็ญ สอนคำ\nฟิสิกส์ 1,ม.4/2,10005,นายณปกร สำอางค์\nฟิสิกส์ 1,ม.4/2,10006,นายธีรวัฒน์ เกตไสย\nฟิสิกส์ 1,ม.4/2,10007,นางสาวกุลธิดา รัตน์ทอง\nฟิสิกส์ 1,ม.4/2,10008,นางสาววันวิสา ดวงเดือน\nเคมี 1,ม.4/1,10001,นายกิตติศักดิ์ มีดี\n";
+    const csv = "\uFEFFวิชา,ห้อง,เลขประจำตัว,ชื่อ-นามสกุล\n";
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'ตัวอย่างไฟล์นำเข้ารายชื่อนักเรียน.csv';
@@ -2015,11 +2139,9 @@ var App={
     const entered = UI.v('pinIn').trim();
     if (!entered) return UI.toast('กรุณากรอกเลขประจำตัวนักเรียนก่อนครับ', 'wn');
     
-    const stuItem = findStuItem(S.subj, S.room, S.stu);
-    const expectedId = getStuId(stuItem);
-    
+    const expectedId = S.studentId;
     if (!expectedId) {
-      return UI.toast('ยังไม่มีเลขประจำตัวของนักเรียนคนนี้ในรายชื่อ กรุณาติดต่อครูให้เพิ่มเลขประจำตัวก่อนครับ', 'er');
+      return UI.toast('ไม่พบเลขประจำตัวที่ยืนยันแล้ว กรุณาออกจากระบบและตรวจสอบใหม่', 'er');
     }
     if (entered === expectedId) {
       const stuKey = `unlocked_v2_${S.subj}_${S.room}_${S.stu}`;
@@ -2232,7 +2354,7 @@ var App={
   showMiss:id=>{
     const a=S.asns.find(x=>x.id===id);if(!a)return;const name=a.name;
     const rf=UI.v('roomF');UI.h('mMissT','ยังไม่ส่ง: '+name);let html='';
-    Object.entries(STUDENTS[S.tab]).forEach(([room,stus])=>{
+    Object.entries(STUDENTS[S.tab]||{}).forEach(([room,stus])=>{
       if(rf&&room!==rf)return;
       const miss=stus.filter(stu=>!S.subs.find(s=>s.subject===S.tab&&s.room===room&&s.student===stu&&s.assignment===name));
       if(!miss.length)return;
@@ -2248,7 +2370,7 @@ var App={
   renderTbl:()=>{
     const rf=UI.v('roomF'),sf=UI.v('search').toLowerCase(),stf=UI.v('statF');
     const asns=S.asns.filter(a=>a.subject===S.tab);let rows=[];
-    Object.entries(STUDENTS[S.tab]).forEach(([room,stus])=>{
+    Object.entries(STUDENTS[S.tab]||{}).forEach(([room,stus])=>{
       if(rf&&room!==rf)return;
       stus.forEach(stu=>{
         if(sf&&!stu.toLowerCase().includes(sf))return;

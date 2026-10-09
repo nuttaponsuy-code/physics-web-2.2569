@@ -49,6 +49,18 @@ function doPost(e) {
       case 'getAll':
         result = handleGetAll();
         break;
+      case 'getRoster':
+        result = handleGetRoster(payload);
+        break;
+      case 'saveRoster':
+        result = handleSaveRoster(payload);
+        break;
+      case 'clearRoster':
+        result = handleClearRoster(payload);
+        break;
+      case 'verifyRosterStudent':
+        result = handleVerifyRosterStudent(payload);
+        break;
       case 'submitAssignment':
         result = handleSubmitAssignment(payload);
         break;
@@ -171,6 +183,9 @@ function initSheetHeaders(sheet, sheetName) {
     case 'AIConfig':
       headers = ['Assignment ID', 'วิชา', 'โจทย์', 'เฉลยอ้างอิง', 'เกณฑ์ตรวจ', 'แนวทางคำแนะนำ', 'Reference Image File ID', 'Updated At'];
       break;
+    case 'Roster':
+      headers = ['วิชา', 'ห้อง', 'เลขประจำตัว', 'ชื่อ-นามสกุล'];
+      break;
   }
   if (headers.length > 0) {
     sheet.appendRow(headers);
@@ -192,14 +207,155 @@ function handleGetAll() {
   var grds = sheetToObjects(getSheet('Grades'));
   var exams = sheetToObjects(getSheet('ExamScores'));
   var photos = sheetToObjects(getSheet('Photos'));
+  [subs, grds, exams, photos].forEach(function(records) {
+    records.forEach(function(record) {
+      if (record.student) record.student = normalizeRosterName_(record.student);
+    });
+  });
 
   return {
     asns: asns,
     subs: subs,
     grds: grds,
     exams: exams,
-    photos: photos
+    photos: photos,
+    rosterSummary: getRosterSummary_()
   };
+}
+
+function getRosterSummary_() {
+  var rows = getSheet('Roster').getDataRange().getValues();
+  var summary = {};
+  for (var i = 1; i < rows.length; i++) {
+    var subject = String(rows[i][0] || '').trim();
+    var room = String(rows[i][1] || '').trim();
+    var studentId = String(rows[i][2] || '').trim();
+    var name = String(rows[i][3] || '').trim();
+    if (!subject || !room || !studentId || !name) continue;
+    if (!summary[subject]) summary[subject] = { students: 0, roomSet: {} };
+    summary[subject].students++;
+    summary[subject].roomSet[room] = true;
+  }
+  Object.keys(summary).forEach(function(subject) {
+    summary[subject].rooms = Object.keys(summary[subject].roomSet).length;
+    delete summary[subject].roomSet;
+  });
+  return summary;
+}
+
+function verifyRosterAdminPassword_(providedPassword) {
+  var expectedPassword = PropertiesService.getScriptProperties().getProperty('ROSTER_ADMIN_PASSWORD');
+  return !!expectedPassword && String(providedPassword || '') === expectedPassword;
+}
+
+function handleGetRoster(p) {
+  if (!verifyRosterAdminPassword_(p.adminPassword)) {
+    return { error: 'รหัสผู้ดูแลรายชื่อไม่ถูกต้อง หรือยังไม่ได้ตั้งค่า ROSTER_ADMIN_PASSWORD' };
+  }
+  var rows = getSheet('Roster').getDataRange().getValues();
+  var roster = {};
+  for (var i = 1; i < rows.length; i++) {
+    var subject = String(rows[i][0] || '').trim();
+    var room = String(rows[i][1] || '').trim();
+    var studentId = String(rows[i][2] || '').trim();
+    var name = String(rows[i][3] || '').trim();
+    if (!subject || !room || !studentId || !name) continue;
+    if (!roster[subject]) roster[subject] = {};
+    if (!roster[subject][room]) roster[subject][room] = [];
+    roster[subject][room].push(studentId + '|' + name);
+  }
+  return { success: true, roster: roster };
+}
+
+function handleSaveRoster(p) {
+  if (!verifyRosterAdminPassword_(p.adminPassword)) {
+    return { error: 'รหัสผู้ดูแลรายชื่อไม่ถูกต้อง หรือยังไม่ได้ตั้งค่า ROSTER_ADMIN_PASSWORD' };
+  }
+  if (!p.roster || typeof p.roster !== 'object' || Array.isArray(p.roster)) {
+    return { error: 'ไม่พบข้อมูลรายชื่อที่ถูกต้อง' };
+  }
+
+  var rows = [];
+  var seen = {};
+  Object.keys(p.roster).forEach(function(subject) {
+    var rooms = p.roster[subject];
+    if (!subject.trim() || !rooms || typeof rooms !== 'object' || Array.isArray(rooms)) {
+      throw new Error('ข้อมูลวิชาหรือห้องเรียนไม่ถูกต้อง');
+    }
+    Object.keys(rooms).forEach(function(room) {
+      var students = rooms[room];
+      if (!room.trim() || !Array.isArray(students)) throw new Error('ข้อมูลห้องเรียนไม่ถูกต้อง');
+      students.forEach(function(item) {
+        var parts = String(item || '').split('|');
+        var studentId = String(parts.shift() || '').trim();
+        var name = parts.join('|').trim();
+        if (!studentId || !name || studentId.length > 50 || name.length > 150 ||
+            subject.length > 100 || room.length > 100) {
+          throw new Error('พบรายชื่อที่ไม่มีรหัส หรือมีข้อมูลยาวเกินกำหนด');
+        }
+        var key = subject + '|' + room + '|' + studentId;
+        if (seen[key]) throw new Error('พบรหัสนักเรียนซ้ำในวิชาและห้องเดียวกัน: ' + studentId);
+        seen[key] = true;
+        rows.push([
+          safeRosterCell_(subject),
+          safeRosterCell_(room),
+          safeRosterCell_(studentId),
+          safeRosterCell_(name)
+        ]);
+      });
+    });
+  });
+  if (!rows.length) return { error: 'ไม่พบรายชื่อนักเรียนในไฟล์' };
+
+  var sheet = getSheet('Roster');
+  var previousLastRow = sheet.getLastRow();
+  sheet.getRange(2, 1, rows.length, 4).setNumberFormat('@').setValues(rows);
+  var firstUnusedRow = rows.length + 2;
+  if (previousLastRow >= firstUnusedRow) {
+    sheet.getRange(firstUnusedRow, 1, previousLastRow - firstUnusedRow + 1, 4).clearContent();
+  }
+  return { success: true, imported: rows.length };
+}
+
+function handleClearRoster(p) {
+  if (!verifyRosterAdminPassword_(p.adminPassword)) {
+    return { error: 'รหัสผู้ดูแลรายชื่อไม่ถูกต้อง หรือยังไม่ได้ตั้งค่า ROSTER_ADMIN_PASSWORD' };
+  }
+  var sheet = getSheet('Roster');
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.getRange(2, 1, lastRow - 1, 4).clearContent();
+  return { success: true };
+}
+
+function handleVerifyRosterStudent(p) {
+  var subject = String(p.subject || '').trim();
+  var room = String(p.room || '').trim();
+  var studentId = String(p.studentId || '').trim();
+  if (!subject || !room || !studentId) return { error: 'กรุณากรอกวิชา ห้อง และเลขประจำตัวให้ครบถ้วน' };
+
+  var rows = getSheet('Roster').getDataRange().getValues();
+  var match = '';
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === subject &&
+        String(rows[i][1]).trim() === room &&
+        String(rows[i][2]).trim() === studentId) {
+      if (match) return { error: 'พบข้อมูลซ้ำ กรุณาติดต่อครูผู้สอน' };
+      match = String(rows[i][3] || '').trim();
+    }
+  }
+  if (!match) return { error: 'ไม่พบข้อมูล โปรดตรวจวิชา ห้อง และเลขประจำตัว หรือติดต่อครูผู้สอน' };
+  return { success: true, name: match };
+}
+
+function safeRosterCell_(value) {
+  var text = String(value);
+  return /^[\s]*[=+\-@]/.test(text) ? "'" + text : text;
+}
+
+function normalizeRosterName_(value) {
+  var text = String(value || '');
+  var separator = text.indexOf('|');
+  return separator >= 0 ? text.slice(separator + 1).trim() : text;
 }
 
 // นักเรียนส่งงาน (แนบลิงก์ หรือไฟล์ภาพ/PDF)
