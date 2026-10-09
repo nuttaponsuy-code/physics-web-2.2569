@@ -347,45 +347,64 @@ tr { cursor: pointer; transition: background .15s; }
         สถาปัตยกรรมแบบต้นฉบับ
    ==================================================================== */
 :root {
-  --hco-cream: #f2ecdf; --hco-cream2: #e6dcc4;
-  --hco-ink: #15181c; --hco-ink2: #20242b;
-  --hco-blue: #3f6fa8; --hco-gold: #c2872f;
-  --hco-line: rgba(21,24,28,.12); --hco-line-dk: rgba(242,236,223,.16);
+  --hco-cream: #ffffff; --hco-cream2: #f2f6fc;
+  --hco-ink: #172338; --hco-ink2: #263b59;
+  --hco-blue: #1769d2; --hco-gold: #d88717;
+  --hco-line: rgba(23,35,56,.12); --hco-line-dk: rgba(23,105,210,.14);
   --font-serif: 'Fraunces', serif;
 }
-.hco-nav { display: flex; justify-content: space-between; align-items: center; padding: calc(env(safe-area-inset-top) + 20px) 28px 20px; background: var(--hco-ink); color: var(--hco-cream); }
+.hco-nav { display: flex; justify-content: space-between; align-items: center; padding: calc(env(safe-area-inset-top) + 16px) 28px; background: var(--hco-cream); color: var(--hco-ink); border-bottom: 1px solid var(--hco-line); }
 .hco-nav-logo { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 1.05rem; letter-spacing: .01em; }
-.hco-nav-meta { font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; opacity: .55; font-weight: 500; text-align: right; line-height: 1.6; }
-.hco-hero { position: relative; background: var(--hco-ink); color: var(--hco-cream); padding: 56px 24px 80px; overflow: hidden; text-align: center; }
+.hco-nav-meta { font-size: .66rem; letter-spacing: .08em; opacity: .7; font-weight: 500; text-align: right; line-height: 1.6; }
+.hco-hero { position: relative; background: radial-gradient(ellipse at 50% 0%, #e4f0ff 0%, transparent 58%), linear-gradient(135deg, #f7faff, #edf4fc); color: var(--hco-ink); padding: 44px 24px 52px; overflow: hidden; text-align: center; }
 .hco-orbit { position: absolute; top: 50%; left: 50%; width: 480px; height: 480px; margin: -240px 0 0 -240px; border: 1px solid var(--hco-line-dk); border-radius: 50%; pointer-events: none; }
-.hco-orbit::before { content: ''; position: absolute; inset: 56px; border: 1px solid rgba(242,236,223,.08); border-radius: 50%; }
+.hco-orbit::before { content: ''; position: absolute; inset: 56px; border: 1px solid rgba(23,105,210,.08); border-radius: 50%; }
 .hco-orbit-spin { position: absolute; inset: 0; animation: hcoSpin 18s linear infinite; }
 .hco-orbit-dot { position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--hco-gold); box-shadow: 0 0 16px 3px rgba(194,135,47,.65); }
 .hco-orbit-spin.rev { animation-duration: 26s; animation-direction: reverse; inset: 56px; }
 @keyframes hcoSpin { to { transform: rotate(360deg); } }
-.hco-eyebrow { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--hco-gold); font-weight: 600; margin-bottom: 20px; position: relative; z-index: 1; }
+.hco-eyebrow { font-size: .72rem; letter-spacing: .16em; color: var(--hco-blue); font-weight: 700; margin-bottom: 14px; position: relative; z-index: 1; }
 .hco-headline { font-family: 'Kanit', sans-serif; font-weight: 300; font-style: italic; font-size: clamp(1.55rem, 5.4vw, 2.35rem); line-height: 1.42; letter-spacing: -.005em; position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
-.hco-headline b { font-family: 'Kanit', sans-serif; font-style: normal; font-weight: 700; color: var(--hco-gold); }
-.hco-sub { position: relative; z-index: 1; font-size: .84rem; color: rgba(242,236,223,.6); margin-top: 18px; line-height: 1.7; }
+.hco-headline b { font-family: 'Kanit', sans-serif; font-style: normal; font-weight: 700; color: var(--hco-blue); }
+.hco-sub { position: relative; z-index: 1; font-size: .84rem; color: rgba(23,35,56,.68); margin-top: 12px; line-height: 1.7; }
 .hco-cta-row { display: flex; gap: 14px; justify-content: center; margin-top: 36px; position: relative; z-index: 1; flex-wrap: wrap; }
 .hco-btn { font-family: 'Kanit', sans-serif; font-weight: 500; font-size: .92rem; padding: 15px 36px; border-radius: 999px; cursor: pointer; transition: .35s cubic-bezier(.22,1,.36,1); letter-spacing: .01em; border: 1px solid transparent; }
-.hco-btn-light { background: var(--hco-cream); color: var(--hco-ink); }
-.hco-btn-light:hover { background: transparent; color: var(--hco-cream); border-color: var(--hco-cream); transform: translateY(-2px); }
-.hco-btn-outline { background: transparent; color: var(--hco-cream); border-color: rgba(242,236,223,.35); }
-.hco-btn-outline:hover { border-color: var(--hco-cream); transform: translateY(-2px); }
+.hco-btn-light { background: var(--hco-blue); color: #fff; box-shadow: 0 8px 20px rgba(23,105,210,.2); }
+.hco-btn-light:hover { background: #0f58b7; transform: translateY(-2px); }
+.hco-btn-outline { background: rgba(255,255,255,.65); color: var(--hco-ink); border-color: rgba(23,35,56,.2); }
+.hco-btn-outline:hover { border-color: var(--hco-blue); color: var(--hco-blue); transform: translateY(-2px); }
 .hco-stats { background: var(--hco-cream); display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
 .hco-stat { padding: 36px 16px; text-align: center; border-right: 1px solid var(--hco-line); }
 .hco-stat:last-child { border-right: none; }
 .hco-stat-n { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: clamp(1.7rem,4.5vw,2.4rem); color: var(--hco-ink); line-height: 1; }
 .hco-stat-l { font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; color: rgba(21,24,28,.55); margin-top: 10px; font-weight: 500; }
-.hco-feat { background: var(--hco-cream2); padding: 60px 24px; }
+.hco-courses { background: var(--hco-cream2); padding: 34px 24px 40px; }
+.hco-course-head { max-width: 980px; margin: 0 auto 18px; display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.hco-course-kicker { color: var(--hco-blue); font-size: .7rem; letter-spacing: .13em; font-weight: 700; margin-bottom: 3px; }
+.hco-course-title { color: var(--hco-ink); font-size: 1.28rem; font-weight: 700; line-height: 1.3; }
+.hco-course-hint { color: rgba(23,35,56,.58); font-size: .78rem; }
+.hco-course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; max-width: 980px; margin: 0 auto; }
+.hco-course-card { position: relative; display: flex; align-items: center; gap: 15px; padding: 20px; background: #fff; color: var(--hco-ink); border: 1px solid var(--hco-line); border-radius: 16px; box-shadow: 0 8px 22px rgba(26,54,93,.06); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.hco-course-card:hover { transform: translateY(-3px); border-color: rgba(23,105,210,.38); box-shadow: 0 14px 28px rgba(26,54,93,.12); }
+.hco-course-card.p5:hover { border-color: rgba(175,82,222,.42); }
+.hco-course-icon { width: 50px; height: 50px; flex: 0 0 50px; display: grid; place-items: center; border-radius: 15px; background: #eaf2ff; color: var(--hco-blue); }
+.hco-course-card.p5 .hco-course-icon { background: #f5edfc; color: #8d45bd; }
+.hco-course-icon svg { width: 27px; height: 27px; }
+.hco-course-info { min-width: 0; flex: 1; }
+.hco-course-label { color: rgba(23,35,56,.52); font-size: .68rem; font-weight: 600; margin-bottom: 1px; }
+.hco-course-name { color: var(--hco-ink); font-size: 1.12rem; font-weight: 700; line-height: 1.35; }
+.hco-course-rooms { color: rgba(23,35,56,.62); font-size: .76rem; margin-top: 3px; }
+.hco-course-action { flex: 0 0 auto; border: 0; border-radius: 999px; background: #edf4ff; color: var(--hco-blue); padding: 9px 13px; font: 600 .78rem 'Kanit', sans-serif; cursor: pointer; }
+.hco-course-action:hover { background: var(--hco-blue); color: #fff; }
+.hco-course-empty { grid-column: 1 / -1; padding: 18px; text-align: center; color: rgba(23,35,56,.62); background: #fff; border: 1px solid var(--hco-line); border-radius: 14px; }
+.hco-feat { background: var(--hco-cream); padding: 48px 24px; }
 .hco-feat-eyebrow { text-align: center; font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(21,24,28,.5); font-weight: 600; margin-bottom: 34px; }
 .hco-feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 34px; max-width: 900px; margin: 0 auto; }
 .hco-feat-c { text-align: left; }
 .hco-feat-ico { font-size: 1.4rem; margin-bottom: 12px; }
 .hco-feat-t { font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 1.02rem; color: var(--hco-ink); margin-bottom: 7px; }
 .hco-feat-d { font-size: .84rem; color: rgba(21,24,28,.6); line-height: 1.65; }
-.hco-foot { background: var(--hco-ink); color: rgba(242,236,223,.5); text-align: center; padding: 22px; font-size: .72rem; letter-spacing: .03em; line-height: 1.7; }
+.hco-foot { background: var(--hco-cream); color: rgba(23,35,56,.55); text-align: center; padding: 22px; font-size: .72rem; letter-spacing: .03em; line-height: 1.7; border-top: 1px solid var(--hco-line); }
 .hco-section-lbl { text-align: center; font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(21,24,28,.5); font-weight: 600; margin-bottom: 30px; }
 .hco-room-list { max-width: 640px; margin: 0 auto; background: var(--hco-cream); border-radius: 14px; overflow: hidden; border: 1px solid var(--hco-line); }
 .hco-room-row { display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-bottom: 1px solid var(--hco-line); }
@@ -399,6 +418,14 @@ tr { cursor: pointer; transition: background .15s; }
   .hco-orbit { width: 340px; height: 340px; margin: -170px 0 0 -170px; }
   .hco-orbit::before { inset: 40px; }
   .hco-orbit-spin.rev { inset: 40px; }
+  .hco-nav { padding-left: 18px; padding-right: 18px; }
+  .hco-hero { padding: 38px 18px 42px; }
+  .hco-cta-row { margin-top: 24px; gap: 10px; }
+  .hco-btn { padding: 12px 26px; }
+  .hco-courses { padding: 28px 16px 32px; }
+  .hco-course-head { align-items: start; flex-direction: column; }
+  .hco-course-card { padding: 16px 14px; gap: 11px; }
+  .hco-course-action { padding: 8px 10px; }
 }
 @media print {
   .topbar, .th-sw, .btn, .hco-orbit { display: none !important; }
@@ -627,6 +654,17 @@ tr { cursor: pointer; transition: background .15s; }
       <button id="nav-tc" class="hco-btn hco-btn-outline">ครูผู้สอน</button>
     </div>
   </div>
+
+  <section class="hco-courses" aria-labelledby="homeCourseTitle">
+    <div class="hco-course-head">
+      <div>
+        <div class="hco-course-kicker">รายวิชาที่เปิดสอน</div>
+        <h2 class="hco-course-title" id="homeCourseTitle">เลือกรายวิชาเพื่อเริ่มต้น</h2>
+      </div>
+      <div class="hco-course-hint">เลือกวิชา แล้วเลือกห้องเรียนของคุณ</div>
+    </div>
+    <div class="hco-course-grid" id="homeCourseGrid"></div>
+  </section>
 
   <div class="hco-stats">
     <div class="hco-stat"><div class="hco-stat-n" id="hcoStat1">–</div><div class="hco-stat-l">นักเรียนในระบบ</div></div>
@@ -890,7 +928,7 @@ function getStuId(item) {
 function findStuItem(subject, room, studentName) {
   const list = (STUDENTS[subject] && STUDENTS[subject][room]) ? STUDENTS[subject][room] : [];
   for (let item of list) {
-    if (getStuName(item) === studentName) return item;
+    if (item === studentName || getStuName(item) === getStuName(studentName)) return item;
   }
   return null;
 }
@@ -1167,13 +1205,13 @@ var App={
   renderRooms:()=>{
     UI.h('roomList',Object.keys(STUDENTS[S.subj]).map(r=>`<div class="ai cl" style="justify-content:center;padding:13px;" onclick="App.selRoom('${r}')"><b style="font-size:.95rem;color:var(--t1);">${r}</b></div>`).join(''));
   },
-  selRoom:r=>{S.room=r;UI.h('stuSel','<option value="">— เลือกชื่อ-นามสกุล —</option>'+STUDENTS[S.subj][r].map(n=>`<option value="${n}">${n}</option>`).join(''));App.step(3);},
+  selRoom:r=>{S.room=r;UI.h('stuSel','<option value="">— เลือกชื่อ-นามสกุล —</option>'+STUDENTS[S.subj][r].map(n=>`<option value="${_esc(n)}">${_esc(getStuName(n))}</option>`).join(''));App.step(3);},
   confStu:()=>{const n=UI.v('stuSel');if(!n)return UI.toast('กรุณาเลือกชื่อก่อนครับ','wn');S.stu=n;App.renderStuDash();App.step(4);},
 
 
   renderStuDash:()=>{
-    UI.h('dName',S.stu);
-    const stuKey = `unlocked_${S.subj}_${S.room}_${S.stu}`;
+    UI.h('dName',getStuName(S.stu));
+    const stuKey = `unlocked_v2_${S.subj}_${S.room}_${S.stu}`;
     const isUnlocked = localStorage.getItem(stuKey) === 'true';
 
     // Render Unlock Banner / Button
@@ -1538,6 +1576,7 @@ var App={
   },
 
   renderSubjGrid: () => {
+    App.renderHomeCourses();
     const grid = $('subjGrid'); if (!grid) return;
     const subjs = Object.keys(STUDENTS);
     if (!subjs.length) {
@@ -1554,6 +1593,37 @@ var App={
     });
     document.querySelectorAll('.sj-c[data-subj]').forEach(function(el){
       el.onclick = function(){ App.selSubj(el.getAttribute('data-subj')); };
+    });
+  },
+
+  renderHomeCourses: () => {
+    const grid = $('homeCourseGrid'); if (!grid) return;
+    const subjs = Object.keys(STUDENTS);
+    if (!subjs.length) {
+      grid.innerHTML = '<div class="hco-course-empty">ยังไม่มีรายวิชาในระบบ</div>';
+      return;
+    }
+    grid.innerHTML = subjs.map((sj, i) => {
+      const rooms = Object.keys(STUDENTS[sj] || {});
+      const roomSummary = rooms.length
+        ? `${rooms.length} ห้องเรียน${rooms.length <= 3 ? ` · ${rooms.join(', ')}` : ''}`
+        : 'ยังไม่มีห้องเรียน';
+      return `<article class="hco-course-card${i % 2 ? ' p5' : ''}">
+        <div class="hco-course-icon" id="home-course-ico-${i}" aria-hidden="true"></div>
+        <div class="hco-course-info">
+          <div class="hco-course-label">รายวิชาฟิสิกส์</div>
+          <div class="hco-course-name">${_esc(sj)}</div>
+          <div class="hco-course-rooms">${_esc(roomSummary)}</div>
+        </div>
+        <button class="hco-course-action" type="button" data-home-subj="${_esc(sj)}">เลือกวิชา →</button>
+      </article>`;
+    }).join('');
+    subjs.forEach((_, i) => Ico.put(`home-course-ico-${i}`, i % 2 ? 'wave' : 'bolt'));
+    grid.querySelectorAll('[data-home-subj]').forEach(el => {
+      el.addEventListener('click', () => {
+        App.goStu();
+        App.selSubj(el.getAttribute('data-home-subj'));
+      });
     });
   },
 
@@ -1763,7 +1833,7 @@ var App={
   openUnlockModal: () => {
     UI.sv('pinIn', '');
     const el = $('unlockStuName');
-    if (el) el.textContent = `${S.subj} • ห้อง ${S.room} — ${S.stu}`;
+    if (el) el.textContent = `${S.subj} • ห้อง ${S.room} — ${getStuName(S.stu)}`;
     openM('mUnlockScore');
   },
 
@@ -1774,8 +1844,11 @@ var App={
     const stuItem = findStuItem(S.subj, S.room, S.stu);
     const expectedId = getStuId(stuItem);
     
-    if (!expectedId || entered === expectedId) {
-      const stuKey = `unlocked_${S.subj}_${S.room}_${S.stu}`;
+    if (!expectedId) {
+      return UI.toast('ยังไม่มีเลขประจำตัวของนักเรียนคนนี้ในรายชื่อ กรุณาติดต่อครูให้เพิ่มเลขประจำตัวก่อนครับ', 'er');
+    }
+    if (entered === expectedId) {
+      const stuKey = `unlocked_v2_${S.subj}_${S.room}_${S.stu}`;
       localStorage.setItem(stuKey, 'true');
       closeM('mUnlockScore');
       UI.toast('ปลดล็อกดูคะแนนส่วนตัวเรียบร้อยแล้ว 🔓', 'ok');
