@@ -67,6 +67,12 @@ function doPost(e) {
       case 'saveAssignment':
         result = handleSaveAssignment(payload);
         break;
+      case 'getAiAssignmentStatus':
+        result = handleGetAiAssignmentStatus(payload);
+        break;
+      case 'getAiAssignmentConfig':
+        result = handleGetAiAssignmentConfig(payload);
+        break;
       case 'saveAiAssignmentConfig':
         result = handleSaveAiAssignmentConfig(payload);
         break;
@@ -377,6 +383,12 @@ function handleSaveAiAssignmentConfig(p) {
   if (!p.assignmentId || !String(p.question || '').trim()) {
     return { error: "กรุณาระบุงานและโจทย์" };
   }
+  if (!String(p.rubric || '').trim()) {
+    return { error: "กรุณาระบุเกณฑ์ตรวจสำหรับ AI" };
+  }
+  if (p.referenceImageData && p.removeReferenceImage) {
+    return { error: "เลือกแนบภาพเฉลยใหม่หรือลบภาพเดิมอย่างใดอย่างหนึ่ง" };
+  }
 
   var assignment = findAssignmentById_(p.assignmentId);
   if (!assignment) return { error: "ไม่พบงานที่ระบุ" };
@@ -399,6 +411,10 @@ function handleSaveAiAssignmentConfig(p) {
       oldFileId = String(rows[i][6] || '');
       break;
     }
+  }
+
+  if (!referenceText && !p.referenceImageData && (!oldFileId || p.removeReferenceImage)) {
+    return { error: "กรุณาระบุเฉลยอ้างอิงเป็นข้อความหรือแนบภาพ" };
   }
 
   var imageFileId = oldFileId;
@@ -424,6 +440,37 @@ function handleSaveAiAssignmentConfig(p) {
   }
 
   return { success: true, assignmentId: String(p.assignmentId), hasReferenceImage: !!imageFileId };
+}
+
+function handleGetAiAssignmentStatus(p) {
+  if (!p.assignmentId) return { error: "ไม่พบรหัสชิ้นงาน" };
+  var assignment = findAssignmentById_(p.assignmentId);
+  if (!assignment) return { error: "ไม่พบงานที่ระบุ" };
+  var config = getAiAssignmentConfig_(p.assignmentId);
+  return {
+    success: true,
+    configured: !!(config && config.question && config.rubric && (config.referenceText || config.referenceImageFileId))
+  };
+}
+
+function handleGetAiAssignmentConfig(p) {
+  if (!verifyAiTeacherPassword_(p.teacherPassword)) {
+    return { error: "รหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ตั้งค่า AI_TEACHER_PASSWORD" };
+  }
+  if (!p.assignmentId) return { error: "ไม่พบรหัสชิ้นงาน" };
+  var assignment = findAssignmentById_(p.assignmentId);
+  if (!assignment) return { error: "ไม่พบงานที่ระบุ" };
+  var config = getAiAssignmentConfig_(p.assignmentId);
+  if (!config) return { success: true, configured: false };
+  return {
+    success: true,
+    configured: true,
+    question: config.question,
+    referenceText: config.referenceText,
+    rubric: config.rubric,
+    feedbackPolicy: config.feedbackPolicy,
+    hasReferenceImage: !!config.referenceImageFileId
+  };
 }
 
 function verifyAiTeacherPassword_(providedPassword) {
@@ -474,6 +521,9 @@ function handleAnalyzeAssignmentDraft(p) {
 
   var config = getAiAssignmentConfig_(p.assignmentId);
   if (!config) return { error: "งานนี้ยังไม่ได้ตั้งค่าโจทย์และเกณฑ์ AI" };
+  if (!config.question || !config.rubric || (!config.referenceText && !config.referenceImageFileId)) {
+    return { error: "การตั้งค่า AI ของงานนี้ยังไม่ครบ ต้องมีเฉลยอ้างอิงและเกณฑ์ตรวจ" };
+  }
   var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
   if (!apiKey) return { error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Script Properties" };
   if (!allowAiDraftRequest_(p)) {

@@ -599,6 +599,53 @@ tr { cursor: pointer; transition: background .15s; }
   </div>
 </div>
 
+<!-- MODAL: CONFIGURE AI FEEDBACK FOR ASSIGNMENT -->
+<div class="moOv" id="mAiConfig">
+  <div class="mo" style="max-width:680px;">
+    <div class="mo-hdr">
+      <div style="font-weight:700;font-size:1.05rem;">🤖 ตั้งค่า AI สำหรับชิ้นงาน</div>
+      <button class="btn btn-g btn-sm" onclick="App.closeAiConfig()">✕</button>
+    </div>
+    <div class="mo-con">
+      <div id="aiConfigAssignment" class="lbl"></div>
+      <input type="hidden" id="aiConfigAssignmentId">
+      <input type="hidden" id="aiHasReferenceImage" value="false">
+      <div class="fg">
+        <label class="lbl" for="aiTeacherPassword">รหัสผ่าน AI_TEACHER_PASSWORD</label>
+        <input type="password" class="fc" id="aiTeacherPassword" autocomplete="current-password" placeholder="รหัสผ่านเฉพาะที่ตั้งใน Apps Script">
+      </div>
+      <button class="btn btn-g btn-sm" type="button" onclick="App.loadAiConfig()">โหลดค่าที่บันทึกไว้</button>
+      <div class="fg" style="margin-top:12px;">
+        <label class="lbl" for="aiQuestion">โจทย์หรือคำสั่งงาน (จำเป็น)</label>
+        <textarea class="fc" id="aiQuestion" rows="3" maxlength="12000" placeholder="ระบุโจทย์และสิ่งที่ต้องการให้นักเรียนทำ"></textarea>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="aiReferenceText">เฉลยอ้างอิง (เก็บเป็นความลับ ไม่แสดงให้นักเรียน)</label>
+        <textarea class="fc" id="aiReferenceText" rows="4" maxlength="12000" placeholder="พิมพ์แนวคำตอบหรือขั้นตอนสำคัญ"></textarea>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="aiReferenceImage">หรือแนบภาพเฉลย (PNG/JPEG/WebP ไม่เกิน 3 MB)</label>
+        <input type="file" class="fc" id="aiReferenceImage" accept="image/png,image/jpeg,image/webp">
+        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.8rem;color:var(--t3);">
+          <input type="checkbox" id="aiRemoveReferenceImage"> ลบภาพเฉลยเดิมเมื่อบันทึก
+        </label>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="aiRubric">เกณฑ์ตรวจ (จำเป็น)</label>
+        <textarea class="fc" id="aiRubric" rows="3" maxlength="12000" placeholder="เช่น ตรวจสูตร หน่วย การแทนค่า และการอธิบายเหตุผล"></textarea>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="aiFeedbackPolicy">แนวทางให้คำแนะนำ</label>
+        <textarea class="fc" id="aiFeedbackPolicy" rows="2" maxlength="4000" placeholder="เช่น ชี้จุดที่ควรกลับไปตรวจโดยไม่บอกเฉลยเต็ม"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-g" onclick="App.closeAiConfig()">ยกเลิก</button>
+        <button class="btn btn-p" onclick="App.saveAiConfig()">บันทึกการตั้งค่า AI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: UNLOCK PRIVATE SCORES (ปลดล็อกดูคะแนนส่วนตัว) -->
 <div class="moOv" id="mUnlockScore">
   <div class="mo" style="max-width:380px;">
@@ -790,6 +837,25 @@ tr { cursor: pointer; transition: background .15s; }
         <div style="font-size:1.05rem;font-weight:700;color:var(--cy);margin-top:2px;" id="subAsnName"></div>
       </div>
       <div id="subResLinks" style="margin-bottom:12px;"></div>
+      <div class="gc" style="margin-bottom:16px;border-color:var(--ac);">
+        <div class="sec-title">🤖 ตรวจคำตอบฉบับร่างกับ AI</div>
+        <div id="subAiStatus" style="font-size:.8rem;color:var(--t3);margin-bottom:10px;">กำลังตรวจสอบการตั้งค่างาน...</div>
+        <div class="fg">
+          <label class="lbl" for="subAiAnswer">คำตอบฉบับร่าง (พิมพ์หรือแนบภาพคำตอบ)</label>
+          <textarea class="fc" id="subAiAnswer" rows="5" maxlength="12000" placeholder="อธิบายวิธีคิดหรือคำตอบของคุณ..." oninput="App.invalidateAiReview()"></textarea>
+        </div>
+        <div class="fg">
+          <label class="lbl" for="subAiImage">ภาพคำตอบ (ไม่บังคับ, PNG/JPEG/WebP ไม่เกิน 3 MB)</label>
+          <input type="file" class="fc" id="subAiImage" accept="image/png,image/jpeg,image/webp" onchange="App.invalidateAiReview()">
+        </div>
+        <button class="btn btn-g" id="subAiAnalyzeBtn" type="button" onclick="App.analyzeSubDraft()" disabled>ขอคำแนะนำจาก AI</button>
+        <div id="subAiFeedback" style="display:none;white-space:pre-wrap;line-height:1.7;padding:12px;margin-top:12px;border:1px solid var(--in-bd);border-radius:var(--r-sm);background:var(--in-b);"></div>
+        <div id="subAiDecision" style="display:none;gap:8px;margin-top:10px;">
+          <button class="btn btn-o" type="button" onclick="App.editAiDraft()">ยังไม่มั่นใจ — กลับไปแก้</button>
+          <button class="btn btn-p" type="button" onclick="App.approveAiDraft()">มั่นใจแล้ว — ไปยืนยันส่งงาน</button>
+        </div>
+        <div id="subAiApproved" style="display:none;color:var(--ok);font-size:.82rem;font-weight:700;margin-top:10px;">✅ ตรวจร่างแล้ว กรุณาแนบไฟล์หรือลิงก์งานด้านล่างเพื่อส่งจริง</div>
+      </div>
       <div class="fg"><label class="lbl">วางลิงก์งาน (Google Drive, Canva ฯลฯ)</label><input type="url" class="fc" id="linkIn" placeholder="https://..."></div>
       <div style="text-align:center;margin:10px 0;color:var(--t4);font-weight:700;font-size:.8rem;">— หรือ —</div>
       <div class="fg"><label class="lbl">อัปโหลดไฟล์งาน</label>
@@ -799,7 +865,7 @@ tr { cursor: pointer; transition: background .15s; }
         </div></div>
       <div style="display:flex;gap:10px;margin-top:16px;">
         <button class="btn btn-o btn-lg" style="flex:1;" onclick="App.step(4)">ยกเลิก</button>
-        <button class="btn btn-p btn-lg" style="flex:2;" onclick="App.subWork()">ยืนยันส่งงาน</button>
+        <button class="btn btn-p btn-lg" id="subWorkBtn" style="flex:2;" onclick="App.subWork()">ยืนยันส่งงาน</button>
       </div>
     </div>
   </div>
@@ -1016,7 +1082,7 @@ const Res={
 
 /* STATE */
 let S={
-  asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',asn:'',tab:'ฟิสิกส์ 3',
+  asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
   rId:null,rName:'',_dbt:null,_cached:false,
@@ -1024,7 +1090,8 @@ let S={
   noStream:null,noAnim:null,poll:{y:0,m:0,n:0},randIv:null,
   shareQuote:null,avatarImg:null,
   msgIv:null,msgCache:[],
-  impRows:[],photos:[]
+  impRows:[],photos:[],
+  aiReviewRequired:false,aiReviewed:false,aiRequestId:0,aiDraftImageData:''
 };
 
 
@@ -1347,12 +1414,93 @@ var App={
   },
 
 
-  prepSub:id=>{
+  prepSub:async id=>{
     const a=S.asns.find(x=>x.id===id);if(!a)return;
-    S.asn=a.name;UI.h('subAsnName',a.name);UI.sv('linkIn','');UI.sv('fileIn','');
+    S.asnId=id;S.asn=a.name;UI.h('subAsnName',a.name);UI.sv('linkIn','');UI.sv('fileIn','');
+    UI.sv('subAiAnswer','');UI.sv('subAiImage','');S.aiDraftImageData='';
+    S.aiReviewRequired=false;S.aiReviewed=false;S.aiRequestId++;
+    UI.h('subAiFeedback','');$('subAiFeedback').style.display='none';
+    $('subAiDecision').style.display='none';$('subAiApproved').style.display='none';
+    $('subAiAnalyzeBtn').disabled=true;$('subWorkBtn').disabled=false;
+    UI.h('subAiStatus','กำลังตรวจสอบว่าครูตั้งค่า AI สำหรับงานนี้หรือไม่...');
     const links=Res.load(id);
     UI.h('subResLinks',links.length?'<div class="res-highlight"><div class="lbl" style="margin-bottom:6px;">สื่อประกอบการเรียน</div>'+links.map(function(r){return '<a href="'+r.url+'" target="_blank" class="res-lnk">'+resLbl(r.type)+' '+r.name+'</a>';}).join('')+'</div>':'');
     App.step(5);
+    const status=await API.call('getAiAssignmentStatus',{assignmentId:id});
+    if(S.asnId!==id)return;
+    if(status.error||status._n){
+      UI.h('subAiStatus','ตรวจสอบการตั้งค่า AI ไม่สำเร็จ จึงยังส่งงานแบบปกติได้ หากต้องการใช้ AI ให้แจ้งครูตรวจ Apps Script');
+      return;
+    }
+    if(status.configured){
+      S.aiReviewRequired=true;
+      UI.h('subAiStatus','ครูเปิดใช้ AI กับงานนี้แล้ว กรุณาวิเคราะห์คำตอบและกดยืนยันความมั่นใจก่อนส่งงาน');
+      $('subAiAnalyzeBtn').disabled=false;$('subWorkBtn').disabled=true;
+    }else{
+      UI.h('subAiStatus','งานนี้ยังไม่ได้เปิดใช้ AI นักเรียนส่งงานตามปกติได้');
+    }
+  },
+  invalidateAiReview:()=>{
+    S.aiRequestId++;
+    S.aiReviewed=false;
+    S.aiDraftImageData='';
+    if($('subAiDecision'))$('subAiDecision').style.display='none';
+    if($('subAiApproved'))$('subAiApproved').style.display='none';
+    if($('subWorkBtn'))$('subWorkBtn').disabled=S.aiReviewRequired;
+    if($('subAiFeedback')&&$('subAiFeedback').style.display==='block'){
+      UI.h('subAiStatus','คำตอบเปลี่ยนแล้ว คำแนะนำที่เห็นเป็นของร่างก่อนหน้า กรุณาวิเคราะห์ใหม่ก่อนยืนยัน');
+    }
+  },
+  analyzeSubDraft:async()=>{
+    const answerText=UI.v('subAiAnswer').trim();
+    const imageFile=$('subAiImage').files[0];
+    if(!answerText&&!imageFile)return UI.toast('กรุณาพิมพ์คำตอบหรือแนบภาพคำตอบก่อนครับ','wn');
+    if(imageFile&&imageFile.size>3*1024*1024)return UI.toast('ภาพคำตอบต้องมีขนาดไม่เกิน 3 MB','er');
+    if(imageFile&&!['image/png','image/jpeg','image/webp'].includes(imageFile.type))return UI.toast('รองรับภาพ PNG, JPEG หรือ WebP เท่านั้น','er');
+    const requestId=++S.aiRequestId;
+    S.aiReviewed=false;$('subWorkBtn').disabled=S.aiReviewRequired;
+    $('subAiDecision').style.display='none';$('subAiApproved').style.display='none';
+    $('subAiFeedback').style.display='none';
+    UI.load(true);
+    try{
+      let answerImageData='';
+      if(imageFile){
+        answerImageData=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();
+          reader.onload=()=>typeof reader.result==='string'?resolve(reader.result):reject(new Error('อ่านภาพคำตอบไม่สำเร็จ'));
+          reader.onerror=()=>reject(new Error('อ่านภาพคำตอบไม่สำเร็จ'));
+          reader.readAsDataURL(imageFile);
+        });
+      }
+      const result=await API.call('analyzeAssignmentDraft',{
+        assignmentId:S.asnId,subject:S.subj,room:S.room,student:S.stu,
+        answerText,answerImageData,answerImageMime:imageFile?imageFile.type:''
+      });
+      if(requestId!==S.aiRequestId)return;
+      if(result.error||result._n)throw new Error(result.error||'AI ไม่ตอบกลับ กรุณาลองใหม่');
+      if(!result.success||!result.feedback)throw new Error('AI ไม่ได้ส่งคำแนะนำกลับมา กรุณาลองใหม่');
+      S.aiDraftImageData=answerImageData;
+      $('subAiFeedback').textContent=result.feedback;
+      $('subAiFeedback').style.display='block';
+      $('subAiDecision').style.display='flex';
+    }catch(error){
+      if(requestId===S.aiRequestId)UI.toast('วิเคราะห์คำตอบไม่สำเร็จ: '+error.message,'er');
+    }finally{
+      UI.load(false);
+    }
+  },
+  editAiDraft:()=>{
+    S.aiReviewed=false;
+    $('subWorkBtn').disabled=S.aiReviewRequired;
+    $('subAiDecision').style.display='none';$('subAiApproved').style.display='none';
+    UI.h('subAiStatus','ยังไม่มั่นใจใช่ไหมครับ? แก้คำตอบด้านบน แล้วขอคำแนะนำจาก AI อีกครั้ง');
+    $('subAiAnswer').focus();
+  },
+  approveAiDraft:()=>{
+    S.aiReviewed=true;
+    $('subWorkBtn').disabled=false;
+    $('subAiDecision').style.display='none';$('subAiApproved').style.display='block';
+    $('linkIn').scrollIntoView({behavior:'smooth',block:'center'});
   },
   mergeImages: async (files) => {
     return new Promise((resolve) => {
@@ -1389,8 +1537,10 @@ var App={
     });
   },
   subWork:async()=>{
-    const link=UI.v('linkIn'),files=$('fileIn').files;
-    if(!link&&files.length===0)return UI.toast('กรุณาใส่ลิงก์หรือเลือกไฟล์งาน','wn');
+    const link=UI.v('linkIn'),files=$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
+    if(S.aiReviewRequired&&!S.aiReviewed)return UI.toast('กรุณาขอคำแนะนำจาก AI และยืนยันว่ามั่นใจก่อนส่งงานครับ','wn');
+    if(!link&&files.length===0&&!answerImage&&!answerText)return UI.toast('กรุณาพิมพ์คำตอบ ใส่ลิงก์ หรือเลือกไฟล์งาน','wn');
+    if(!link&&files.length===0&&answerImage&&answerText)return UI.toast('มีทั้งข้อความและภาพคำตอบ กรุณาแนบไฟล์งานจริงหรือใส่ลิงก์ เพื่อส่งทั้งสองส่วนให้ครบ','wn');
     if(files.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
     UI.load(true);
     const p={subject:S.subj,room:S.room,student:S.stu,assignment:S.asn,link};
@@ -1408,6 +1558,30 @@ var App={
           p.fileData=merged;p.fileName="merged_images.jpg";p.fileMime="image/jpeg";await App._doSub(p);
         }).catch(()=>{UI.load(false);UI.toast('เกิดข้อผิดพลาดในการรวมรูปภาพ','er');});
       }
+    }else if(answerImage){
+      if(answerImage.size>20*1024*1024){UI.load(false);return UI.toast('ขนาดไฟล์รวมใหญ่เกิน 20MB','er');}
+      try{
+        const data=S.aiDraftImageData||await new Promise((resolve,reject)=>{
+          const reader=new FileReader();
+          reader.onload=()=>typeof reader.result==='string'?resolve(reader.result):reject(new Error('อ่านภาพคำตอบไม่สำเร็จ'));
+          reader.onerror=()=>reject(new Error('อ่านภาพคำตอบไม่สำเร็จ'));
+          reader.readAsDataURL(answerImage);
+        });
+        p.fileData=data;p.fileName=answerImage.name;p.fileMime=answerImage.type;
+        await App._doSub(p);
+      }catch(error){
+        UI.load(false);UI.toast('แนบภาพคำตอบไม่สำเร็จ: '+error.message,'er');
+      }
+    }else if(answerText){
+      const answerBlob=new Blob([answerText],{type:'text/plain;charset=utf-8'});
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        if(typeof reader.result!=='string'){UI.load(false);return UI.toast('เตรียมไฟล์คำตอบไม่สำเร็จ','er');}
+        p.fileData=reader.result;p.fileName=`answer_${S.asnId}.txt`;p.fileMime='text/plain;charset=utf-8';
+        await App._doSub(p);
+      };
+      reader.onerror=()=>{UI.load(false);UI.toast('อ่านคำตอบเพื่อสร้างไฟล์ส่งงานไม่สำเร็จ','er');};
+      reader.readAsDataURL(answerBlob);
     }else await App._doSub(p);
   },
   _doSub:async p=>{
@@ -1455,7 +1629,7 @@ var App={
         const done=S.scaMap.get(`${S.tab}|${a.name}`)||0,miss=tot-done,pct=tot?Math.round(done/tot*100):0;
         const res=Res.load(a.id);
         const catTag = (a.category==='pre'||a.category==='post') ? `<span class="bd bd-cat" style="font-size:.64rem;">${catLbl(a.category)}</span>` : '';
-        return `<div class="ai" style="flex-direction:column;align-items:stretch;gap:9px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="ai-info"><div class="ai-name">${a.name}${catTag}</div><div class="ai-meta">คะแนนเต็ม: ${a.maxScore} | กำหนดส่ง: ${a.dueDate||'-'}</div>${res.length?'<div class="res-sec">'+res.map(function(r){return '<a href="'+r.url+'" target="_blank" class="res-lnk">'+resLbl(r.type)+' '+r.name+'</a>';}).join('')+'</div>':''}</div><div class="ai-acts">${miss>0?`<span class="miss-bd" onclick="App.showMiss('${a.id}')">ค้าง ${miss} คน</span>`:'<span class="bd bd-ok">ครบ</span>'}<button class="btn btn-g btn-sm" onclick="App.openRes('${a.id}')">ลิงก์</button><button class="btn btn-g btn-sm" onclick="App.editAsn('${a.id}')">แก้ไข</button><button class="btn btn-d btn-sm" onclick="App.delAsn('${a.id}')">ลบ</button></div></div><div><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--t3);margin-bottom:3px;"><span>ส่งแล้ว ${done}/${tot} คน</span><span>${pct}%</span></div><div class="pw"><div class="pf" style="width:${pct}%"></div></div></div></div>`;
+        return `<div class="ai" style="flex-direction:column;align-items:stretch;gap:9px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="ai-info"><div class="ai-name">${a.name}${catTag}</div><div class="ai-meta">คะแนนเต็ม: ${a.maxScore} | กำหนดส่ง: ${a.dueDate||'-'}</div>${res.length?'<div class="res-sec">'+res.map(function(r){return '<a href="'+r.url+'" target="_blank" class="res-lnk">'+resLbl(r.type)+' '+r.name+'</a>';}).join('')+'</div>':''}</div><div class="ai-acts">${miss>0?`<span class="miss-bd" onclick="App.showMiss('${a.id}')">ค้าง ${miss} คน</span>`:'<span class="bd bd-ok">ครบ</span>'}<button class="btn btn-3 btn-sm" onclick="App.openAiConfig('${a.id}')">🤖 ตั้งค่า AI</button><button class="btn btn-g btn-sm" onclick="App.openRes('${a.id}')">ลิงก์</button><button class="btn btn-g btn-sm" onclick="App.editAsn('${a.id}')">แก้ไข</button><button class="btn btn-d btn-sm" onclick="App.delAsn('${a.id}')">ลบ</button></div></div><div><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--t3);margin-bottom:3px;"><span>ส่งแล้ว ${done}/${tot} คน</span><span>${pct}%</span></div><div class="pw"><div class="pf" style="width:${pct}%"></div></div></div></div>`;
       }).join('')}</div></div>`;
     });
     UI.h('tcAcc',html||'<div style="text-align:center;padding:18px;color:var(--t3);">ยังไม่มีชิ้นงาน</div>');
@@ -1956,6 +2130,78 @@ var App={
       S.asns.forEach(a=>{ if(!a.category){ try{const m=JSON.parse(localStorage.getItem('asnCatMap')||'{}'); if(m[a.name])a.category=m[a.name]; }catch(e){} } });
       App.refresh();
     }else UI.toast((r.error||'เกิดข้อผิดพลาด'),'er');
+  },
+  openAiConfig:id=>{
+    const assignment=S.asns.find(a=>String(a.id)===String(id));
+    if(!assignment)return UI.toast('ไม่พบชิ้นงานที่ต้องการตั้งค่า AI','er');
+    UI.sv('aiConfigAssignmentId',id);UI.sv('aiTeacherPassword','');
+    UI.sv('aiQuestion','');UI.sv('aiReferenceText','');UI.sv('aiRubric','');UI.sv('aiFeedbackPolicy','');
+    UI.sv('aiHasReferenceImage','false');
+    UI.sv('aiReferenceImage','');$('aiRemoveReferenceImage').checked=false;
+    $('aiConfigAssignment').textContent=`วิชา ${assignment.subject} · งาน ${assignment.name}`;
+    openM('mAiConfig');
+  },
+  closeAiConfig:()=>{
+    UI.sv('aiTeacherPassword','');
+    closeM('mAiConfig');
+  },
+  loadAiConfig:async()=>{
+    const teacherPassword=UI.v('aiTeacherPassword').trim();
+    if(!teacherPassword)return UI.toast('กรุณากรอกรหัสผ่าน AI_TEACHER_PASSWORD','wn');
+    const result=await API.call('getAiAssignmentConfig',{
+      assignmentId:UI.v('aiConfigAssignmentId'),teacherPassword
+    });
+    if(result.error||result._n)return UI.toast('โหลดค่า AI ไม่สำเร็จ: '+(result.error||'เซิร์ฟเวอร์ไม่ตอบ'),'er');
+    if(!result.configured)return UI.toast('งานนี้ยังไม่มีการตั้งค่า AI','wn');
+    UI.sv('aiQuestion',result.question||'');
+    UI.sv('aiReferenceText',result.referenceText||'');
+    UI.sv('aiRubric',result.rubric||'');
+    UI.sv('aiFeedbackPolicy',result.feedbackPolicy||'');
+    UI.sv('aiHasReferenceImage',String(!!result.hasReferenceImage));
+    $('aiRemoveReferenceImage').checked=false;
+    UI.toast(result.hasReferenceImage?'โหลดข้อความแล้ว (มีภาพเฉลยเดิมบันทึกอยู่)':'โหลดการตั้งค่าเดิมแล้ว','ok');
+  },
+  saveAiConfig:async()=>{
+    const teacherPassword=UI.v('aiTeacherPassword').trim();
+    const question=UI.v('aiQuestion').trim();
+    const referenceText=UI.v('aiReferenceText').trim();
+    const rubric=UI.v('aiRubric').trim();
+    if(!teacherPassword)return UI.toast('กรุณากรอกรหัสผ่าน AI_TEACHER_PASSWORD','wn');
+    if(!question)return UI.toast('กรุณาระบุโจทย์หรือคำสั่งงาน','wn');
+    const imageFile=$('aiReferenceImage').files[0];
+    if(!rubric)return UI.toast('กรุณาระบุเกณฑ์ตรวจให้ AI','wn');
+    if(!referenceText&&!imageFile&&!(UI.v('aiHasReferenceImage')==='true'&&!$('aiRemoveReferenceImage').checked))return UI.toast('กรุณาระบุเฉลยอ้างอิงเป็นข้อความหรือแนบภาพ','wn');
+    if(imageFile&&$('aiRemoveReferenceImage').checked)return UI.toast('เลือกแนบภาพเฉลยใหม่หรือลบภาพเดิมอย่างใดอย่างหนึ่ง','wn');
+    if(imageFile&&imageFile.size>3*1024*1024)return UI.toast('ภาพเฉลยต้องมีขนาดไม่เกิน 3 MB','er');
+    if(imageFile&&!['image/png','image/jpeg','image/webp'].includes(imageFile.type))return UI.toast('รองรับภาพเฉลย PNG, JPEG หรือ WebP เท่านั้น','er');
+    UI.load(true);
+    try{
+      let referenceImageData='';
+      if(imageFile){
+        referenceImageData=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();
+          reader.onload=()=>typeof reader.result==='string'?resolve(reader.result):reject(new Error('อ่านภาพเฉลยไม่สำเร็จ'));
+          reader.onerror=()=>reject(new Error('อ่านภาพเฉลยไม่สำเร็จ'));
+          reader.readAsDataURL(imageFile);
+        });
+      }
+      const result=await API.call('saveAiAssignmentConfig',{
+        assignmentId:UI.v('aiConfigAssignmentId'),teacherPassword,question,
+        referenceText,rubric,
+        feedbackPolicy:UI.v('aiFeedbackPolicy').trim(),referenceImageData,
+        referenceImageMime:imageFile?imageFile.type:'',
+        removeReferenceImage:$('aiRemoveReferenceImage').checked
+      });
+      if(result.error||result._n)throw new Error(result.error||'เซิร์ฟเวอร์ไม่ตอบ');
+      if(!result.success)throw new Error('บันทึกการตั้งค่าไม่สำเร็จ');
+      UI.sv('aiHasReferenceImage',String(!!result.hasReferenceImage));
+      App.closeAiConfig();
+      UI.toast('บันทึกโจทย์ เฉลย และเกณฑ์ AI เรียบร้อยแล้ว','ok');
+    }catch(error){
+      UI.toast('บันทึกการตั้งค่า AI ไม่สำเร็จ: '+error.message,'er');
+    }finally{
+      UI.load(false);
+    }
   },
   delAsn:async id=>{
     if(!confirm('ยืนยันการลบชิ้นงานนี้?'))return;
