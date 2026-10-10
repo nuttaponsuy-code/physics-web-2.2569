@@ -15,7 +15,7 @@ const APP_CONFIG = {
   teacherPassword: "physics2569", // รหัสผ่านล็อกอินเข้าหน้าแดชบอร์ดครูผู้สอน
 
   // 2. การเชื่อมต่อฐานข้อมูล Google Sheets (Google Apps Script Web App URL)
-  appsScriptUrl: "https://script.google.com/macros/s/AKfycbwrmFUmhMA9ybq_6SqlR_ljMPHiM1MOzfa8Ju_lD1sZ7YvVAt-94QqkybqdrXo9hAcc/exec",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbyHNwis_FVEYcpP17cpCjEh0muj8GQKpUR3IHU98DF9KYtQg5Xb3rvzR6OIwV5X8YHF/exec",
 
   // 3. การเชื่อมต่อ Firebase (สำหรับระบบโพลสด Exit Ticket และแชทสดในห้อง)
   firebase: {
