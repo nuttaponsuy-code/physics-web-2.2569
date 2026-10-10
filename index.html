@@ -1221,6 +1221,23 @@ function rebuildIdx(){
   S.exMap=new Map();S.exams.forEach(e=>S.exMap.set(`${e.subject}|${e.room}|${e.student}`,e));
 }
 
+function teacherRosterForSubject(subject) {
+  const roster={};
+  const add=(room,student)=>{
+    const name=getStuName(student);
+    if(!room||!name)return;
+    if(!roster[room])roster[room]=new Set();
+    roster[room].add(name);
+  };
+  Object.entries(STUDENTS[subject]||{}).forEach(([room,students])=>students.forEach(student=>add(room,student)));
+  [S.subs,S.grds,S.exams].forEach(records=>{
+    records.forEach(record=>{
+      if(record.subject===subject)add(record.room,record.student);
+    });
+  });
+  return Object.fromEntries(Object.entries(roster).map(([room,students])=>[room,Array.from(students)]));
+}
+
 
 function isLate(subTime, dueStr) {
   if(!subTime || !dueStr) return false;
@@ -1670,7 +1687,7 @@ var App={
     if(tb3)tb3.className='stab'+(t==='ฟิสิกส์ 3'?' on':'');
     if(tb5)tb5.className='stab'+(t==='ฟิสิกส์ 5'?' on':'');
     var rf=$('roomF');
-    if(rf)UI.h('roomF','<option value="">— ดูทุกห้อง —</option>'+Object.keys(STUDENTS[t]||{}).map(function(r){return '<option>'+r+'</option>';}).join(''));
+    if(rf)UI.h('roomF','<option value="">— ดูทุกห้อง —</option>'+Object.keys(teacherRosterForSubject(t)).map(function(r){return '<option>'+_esc(r)+'</option>';}).join(''));
     if($('pg-tc'))App.renderTcDash();
     var f=$('toolsFrame');
     if(f&&f.contentWindow)f.contentWindow.postMessage({type:'ttSubjectChange',subject:t},'*');
@@ -1679,7 +1696,10 @@ var App={
     if(!$('tcSubjN'))return;
     UI.h('tcSubjN',`(${S.tab})`);
     const asns=S.asns.filter(a=>a.subject===S.tab);
-    const roster=STUDENTS[S.tab]||{};
+    const roster=teacherRosterForSubject(S.tab);
+    const roomFilter=$('roomF'),selectedRoom=roomFilter?roomFilter.value:'';
+    if(roomFilter)UI.h('roomF','<option value="">— ดูทุกห้อง —</option>'+Object.keys(roster).map(room=>'<option value="'+_esc(room)+'">'+_esc(room)+'</option>').join(''));
+    if(roomFilter&&Object.keys(roster).includes(selectedRoom))roomFilter.value=selectedRoom;
     const allS=Object.values(roster).flat();
     let tS=0,tM=0;
     Object.entries(roster).forEach(([room,stus])=>stus.forEach(stu=>{const ms=S.scuMap.get(`${S.tab}|${room}|${stu}`)||0;tS+=ms;if(ms<asns.length)tM++;}));
@@ -1712,7 +1732,7 @@ var App={
     };
     const rows=[['ลำดับ','วิชา','ห้อง','ชื่อ-นามสกุล','เก็บก่อนกลางภาค (25)','สอบกลางภาค (20)','เก็บหลังกลางภาค (25)','สอบปลายภาค (30)','รวม (100)']];
     let n=1;
-    Object.entries(STUDENTS[S.tab]||{}).forEach(([room,stus])=>{
+    Object.entries(teacherRosterForSubject(S.tab)).forEach(([room,stus])=>{
       stus.forEach(stu=>{
         const ex=S.exMap.get(`${S.tab}|${room}|${stu}`);
         rows.push([
@@ -2372,7 +2392,7 @@ var App={
   showMiss:id=>{
     const a=S.asns.find(x=>x.id===id);if(!a)return;const name=a.name;
     const rf=UI.v('roomF');UI.h('mMissT','ยังไม่ส่ง: '+name);let html='';
-    Object.entries(STUDENTS[S.tab]||{}).forEach(([room,stus])=>{
+    Object.entries(teacherRosterForSubject(S.tab)).forEach(([room,stus])=>{
       if(rf&&room!==rf)return;
       const miss=stus.filter(stu=>!S.subs.find(s=>s.subject===S.tab&&s.room===room&&s.student===stu&&s.assignment===name));
       if(!miss.length)return;
@@ -2388,7 +2408,7 @@ var App={
   renderTbl:()=>{
     const rf=UI.v('roomF'),sf=UI.v('search').toLowerCase(),stf=UI.v('statF');
     const asns=S.asns.filter(a=>a.subject===S.tab);let rows=[];
-    Object.entries(STUDENTS[S.tab]||{}).forEach(([room,stus])=>{
+    Object.entries(teacherRosterForSubject(S.tab)).forEach(([room,stus])=>{
       if(rf&&room!==rf)return;
       stus.forEach(stu=>{
         if(sf&&!stu.toLowerCase().includes(sf))return;
