@@ -2434,11 +2434,11 @@ var App={
     UI.h('spB',html);
     $('sideP').classList.add('open');$('spOv').classList.add('open');
   },
-  markBookSubmission:async(room,stu,asnId)=>{
+  markBookSubmission:async(subject,room,stu,asnId)=>{
     const a=S.asns.find(x=>x.id===asnId);if(!a)return;
     if(!confirm(`ยืนยันว่ารับงาน "${a.name}" จากเล่มของ ${stu} แล้วหรือไม่?`))return;
     UI.load(true);
-    const r=await API.call('markBookSubmission',{subject:S.tab,room,student:stu,assignment:a.name});
+    const r=await API.call('markBookSubmission',{subject,room,student:stu,assignment:a.name});
     UI.load(false);
     if(!r||r.error)return UI.toast((r&&r.error)||'บันทึกรับงานจากเล่มไม่สำเร็จ','er');
     if(r.alreadyExists){
@@ -2447,7 +2447,7 @@ var App={
       App.openPanel(room,stu);
       return;
     }
-    S.subs.push({id:'SUB_'+Date.now(),subject:S.tab,room,student:stu,assignment:a.name,submittedAt:r.submittedAt,submissionMethod:r.submissionMethod||'เล่ม'});
+    S.subs.push({id:'SUB_'+Date.now(),subject,room,student:stu,assignment:a.name,submittedAt:r.submittedAt,submissionMethod:r.submissionMethod||'เล่ม'});
     rebuildIdx();
     App.renderTcDash();
     App.openPanel(room,stu);
