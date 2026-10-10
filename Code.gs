@@ -719,7 +719,7 @@ function handleAnalyzeAssignmentDraft(p) {
     parts.push({ inlineData: { mimeType: answerImage.mimeType, data: Utilities.base64Encode(answerImage.bytes) } });
   }
 
-  var model = PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || 'gemini-2.5-flash';
+  var model = getGeminiModel_();
   var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
   var requestBody = {
     systemInstruction: {
@@ -762,6 +762,15 @@ function handleAnalyzeAssignmentDraft(p) {
   var feedback = responseParts.map(function(part) { return part.text || ''; }).join('').trim();
   if (!feedback) return { error: "AI ไม่ได้ส่งคำแนะนำกลับมา กรุณาลองใหม่" };
   return { success: true, feedback: feedback };
+}
+
+function getGeminiModel_() {
+  var configuredModel = String(PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || '').trim();
+  if (!configuredModel || configuredModel === 'gemini-2.5-flash') {
+    if (configuredModel) Logger.log('GEMINI_MODEL gemini-2.5-flash is retired; using gemini-3.8-flash');
+    return 'gemini-3.8-flash';
+  }
+  return configuredModel;
 }
 
 function describeGeminiError_(status, responseText) {
