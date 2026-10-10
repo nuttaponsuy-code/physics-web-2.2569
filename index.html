@@ -645,8 +645,9 @@ tr { cursor: pointer; transition: background .15s; }
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button class="btn btn-g" onclick="App.closeAiConfig()">ยกเลิก</button>
-        <button class="btn btn-p" onclick="App.saveAiConfig()">บันทึกการตั้งค่า AI</button>
+        <button class="btn btn-p" id="saveAiConfigBtn" onclick="App.saveAiConfig()">บันทึกการตั้งค่า AI</button>
       </div>
+      <div id="aiSaveStatus" role="status" aria-live="polite" style="display:none;margin-top:10px;text-align:right;font-size:.8rem;color:var(--t3);"></div>
     </div>
   </div>
 </div>
@@ -1159,22 +1160,28 @@ function closeSP(){$('sideP').classList.remove('open');$('spOv').classList.remov
 const API={
   _ready:true,
   ping:()=>new Promise((res)=>{ res(true); }),
-  call:async (a,p)=>{
+  call:async (a,p,options={})=>{
     if (!API_URL || API_URL === "วาง_URL_WEB_APP_ของครูที่นี่") {
       UI.toast('ยังไม่ได้ใส่ API URL ในโค้ด', 'er');
       return {error: 'API URL is missing'};
     }
+    const controller=options.timeoutMs&&typeof AbortController!=='undefined'?new AbortController():null;
+    const timeout=controller?setTimeout(()=>controller.abort(),options.timeoutMs):null;
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: a, payload: p || {} })
+        body: JSON.stringify({ action: a, payload: p || {} }),
+        signal:controller?controller.signal:undefined
       });
       const result = await response.json();
       if(result && result.error) return result;
       return result || { _n: true };
     } catch (e) {
       console.error(a, e);
+      if(e.name==='AbortError')return {error:`คำขอใช้เวลานานเกิน ${Math.ceil(options.timeoutMs/1000)} วินาที กรุณาตรวจสอบว่าบันทึกสำเร็จก่อนลองซ้ำ`};
       return { error: 'การเชื่อมต่อเซิร์ฟเวอร์ล้มเหลว' };
+    } finally {
+      if(timeout)clearTimeout(timeout);
     }
   },
   export:async ()=>{
@@ -2289,6 +2296,8 @@ var App={
     UI.toast(result.hasReferenceImage?'โหลดข้อความแล้ว (มีภาพเฉลยเดิมบันทึกอยู่)':'โหลดการตั้งค่าเดิมแล้ว','ok');
   },
   saveAiConfig:async()=>{
+    const button=$('saveAiConfigBtn');
+    if(button&&button.disabled)return;
     const teacherPassword=UI.v('aiTeacherPassword').trim();
     const question=UI.v('aiQuestion').trim();
     const referenceText=UI.v('aiReferenceText').trim();
@@ -2301,7 +2310,9 @@ var App={
     if(imageFile&&$('aiRemoveReferenceImage').checked)return UI.toast('เลือกแนบภาพเฉลยใหม่หรือลบภาพเดิมอย่างใดอย่างหนึ่ง','wn');
     if(imageFile&&imageFile.size>3*1024*1024)return UI.toast('ภาพเฉลยต้องมีขนาดไม่เกิน 3 MB','er');
     if(imageFile&&!['image/png','image/jpeg','image/webp'].includes(imageFile.type))return UI.toast('รองรับภาพเฉลย PNG, JPEG หรือ WebP เท่านั้น','er');
-    UI.load(true);
+    if(button){button.disabled=true;button.textContent='กำลังบันทึก...';}
+    const status=$('aiSaveStatus');
+    if(status){status.textContent=imageFile?'กำลังบันทึกภาพเฉลยและการตั้งค่า อาจใช้เวลาสักครู่...':'กำลังบันทึกการตั้งค่า AI...';status.style.display='block';}
     try{
       let referenceImageData='';
       if(imageFile){
@@ -2318,7 +2329,7 @@ var App={
         feedbackPolicy:UI.v('aiFeedbackPolicy').trim(),referenceImageData,
         referenceImageMime:imageFile?imageFile.type:'',
         removeReferenceImage:$('aiRemoveReferenceImage').checked
-      });
+      },{timeoutMs:60000});
       if(result.error||result._n)throw new Error(result.error||'เซิร์ฟเวอร์ไม่ตอบ');
       if(!result.success)throw new Error('บันทึกการตั้งค่าไม่สำเร็จ');
       UI.sv('aiHasReferenceImage',String(!!result.hasReferenceImage));
@@ -2327,7 +2338,8 @@ var App={
     }catch(error){
       UI.toast('บันทึกการตั้งค่า AI ไม่สำเร็จ: '+error.message,'er');
     }finally{
-      UI.load(false);
+      if(button){button.disabled=false;button.textContent='บันทึกการตั้งค่า AI';}
+      if(status){status.style.display='none';status.textContent='';}
     }
   },
   delAsn:async id=>{

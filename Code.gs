@@ -47,6 +47,20 @@ function doPost(e) {
     }
   }
 
+  if (action === 'saveAiAssignmentConfig') {
+    var aiConfigLock = LockService.getUserLock();
+    var aiConfigLockAcquired = false;
+    try {
+      aiConfigLock.waitLock(10000);
+      aiConfigLockAcquired = true;
+      return respondJSON(handleSaveAiAssignmentConfig(payload));
+    } catch (err) {
+      return respondJSON({ error: "บันทึกการตั้งค่า AI ไม่สำเร็จ: " + err.toString() });
+    } finally {
+      if (aiConfigLockAcquired) aiConfigLock.releaseLock();
+    }
+  }
+
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000); // ป้องกัน race condition เมื่อมีการเขียนพร้อมกัน
@@ -87,9 +101,6 @@ function doPost(e) {
         break;
       case 'getAiAssignmentConfig':
         result = handleGetAiAssignmentConfig(payload);
-        break;
-      case 'saveAiAssignmentConfig':
-        result = handleSaveAiAssignmentConfig(payload);
         break;
       case 'deleteAssignment':
         result = handleDeleteAssignment(payload);
