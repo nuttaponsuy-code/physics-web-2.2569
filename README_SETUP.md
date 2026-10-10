@@ -32,7 +32,7 @@
 | `AI_TEACHER_PASSWORD` | รหัสผ่านเฉพาะสำหรับบันทึกเฉลย AI ตั้งรหัสที่คาดเดายากและไม่ใช้รหัสผ่านล็อกอินหน้าเว็บ |
 | `GEMINI_MODEL` | ไม่บังคับ; ค่าเริ่มต้นคือ `gemini-3.8-flash` |
 
-กด **Save script properties** หลังเพิ่มค่าแล้ว อย่าบันทึกค่าจริงลงใน README หรือ repository และตรวจสอบ quota/ค่าใช้จ่ายของ Google AI Studio ก่อนเปิดให้ใช้งานจริง หากเคยตั้ง `GEMINI_MODEL` เป็น `gemini-2.5-flash` ให้เปลี่ยนเป็น `gemini-3.8-flash` หรือเอา property นี้ออกเพื่อใช้ค่าเริ่มต้นใหม่ โค้ดล่าสุดจะเปลี่ยนจาก `gemini-2.5-flash` ไปใช้ `gemini-3.8-flash` ให้อัตโนมัติ
+กด **Save script properties** หลังเพิ่มค่าแล้ว อย่าบันทึกค่าจริงลงใน README หรือ repository และตรวจสอบ quota/ค่าใช้จ่ายของ Google AI Studio ก่อนเปิดให้ใช้งานจริง หากเคยตั้ง `GEMINI_MODEL` เป็น `gemini-2.5-flash` ให้เปลี่ยนเป็น `gemini-3.8-flash` หรือเอา property นี้ออกเพื่อใช้ค่าเริ่มต้นใหม่ โค้ดล่าสุดจะเปลี่ยนจาก `gemini-2.5-flash` ไปใช้ `gemini-3.8-flash` ให้อัตโนมัติ ค่า `GEMINI_MODEL` ใส่ได้ทั้ง `gemini-3.8-flash` และ `models/gemini-3.8-flash`
 
 ### Step 5.2: อัปเดต Apps Script deployment
 

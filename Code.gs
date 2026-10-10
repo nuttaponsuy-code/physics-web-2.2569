@@ -766,6 +766,7 @@ function handleAnalyzeAssignmentDraft(p) {
 
 function getGeminiModel_() {
   var configuredModel = String(PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || '').trim();
+  configuredModel = configuredModel.replace(/^models\//i, '');
   if (!configuredModel || configuredModel === 'gemini-2.5-flash') {
     if (configuredModel) Logger.log('GEMINI_MODEL gemini-2.5-flash is retired; using gemini-3.8-flash');
     return 'gemini-3.8-flash';
