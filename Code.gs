@@ -738,16 +738,52 @@ function handleAnalyzeAssignmentDraft(p) {
   });
   var status = response.getResponseCode();
   if (status < 200 || status >= 300) {
-    Logger.log('Gemini API returned HTTP ' + status);
-    return { error: status === 429 ? "AI ใช้งานหนาแน่นหรือเกินโควตาชั่วคราว กรุณาลองใหม่ภายหลัง" : "AI วิเคราะห์ไม่สำเร็จ กรุณาลองใหม่ภายหลัง" };
+    var errorBody = response.getContentText();
+    Logger.log('Gemini API returned HTTP ' + status + ': ' + errorBody.slice(0, 1000));
+    return { error: describeGeminiError_(status, errorBody) };
   }
 
-  var result = JSON.parse(response.getContentText());
+  var result;
+  try {
+    result = JSON.parse(response.getContentText());
+  } catch (err) {
+    Logger.log('Gemini returned invalid JSON: ' + err.toString());
+    return { error: "AI ส่งข้อมูลกลับมาไม่ถูกต้อง กรุณาลองใหม่ภายหลัง" };
+  }
+  if (result.promptFeedback && result.promptFeedback.blockReason) {
+    return { error: "AI ปฏิเสธคำขอนี้ (" + result.promptFeedback.blockReason + ") กรุณาตรวจคำตอบหรือภาพที่ส่ง" };
+  }
   var candidates = result.candidates || [];
+  if (!candidates.length) {
+    Logger.log('Gemini returned no candidates: ' + JSON.stringify(result).slice(0, 1000));
+    return { error: "AI ไม่ได้สร้างคำแนะนำ อาจติดข้อจำกัดด้านความปลอดภัยหรือโควตา กรุณาลองใหม่" };
+  }
   var responseParts = candidates.length && candidates[0].content ? candidates[0].content.parts || [] : [];
   var feedback = responseParts.map(function(part) { return part.text || ''; }).join('').trim();
   if (!feedback) return { error: "AI ไม่ได้ส่งคำแนะนำกลับมา กรุณาลองใหม่" };
   return { success: true, feedback: feedback };
+}
+
+function describeGeminiError_(status, responseText) {
+  var providerMessage = '';
+  try {
+    var errorData = JSON.parse(responseText);
+    providerMessage = String(errorData.error && errorData.error.message || '').trim();
+  } catch (err) {
+    providerMessage = '';
+  }
+  if (providerMessage.length > 300) providerMessage = providerMessage.slice(0, 300) + '…';
+
+  var explanation;
+  if (status === 400) explanation = 'คำขอไม่ถูกต้อง ตรวจชื่อรุ่นโมเดล GEMINI_MODEL และชนิดภาพที่ส่ง';
+  else if (status === 401 || status === 403) explanation = 'GEMINI_API_KEY ไม่ถูกต้อง หรือ key ไม่มีสิทธิ์ใช้ Gemini API';
+  else if (status === 404) explanation = 'ไม่พบรุ่นโมเดลที่ตั้งไว้ใน GEMINI_MODEL';
+  else if (status === 429) explanation = 'เกินโควตาหรือเรียก AI ถี่เกินไป ตรวจ quota และ billing ของ Google AI Studio';
+  else if (status >= 500) explanation = 'บริการ Gemini ขัดข้องชั่วคราว';
+  else explanation = 'Gemini ปฏิเสธคำขอ';
+
+  return 'AI วิเคราะห์ไม่สำเร็จ (HTTP ' + status + '): ' + explanation +
+    (providerMessage ? '. รายละเอียด: ' + providerMessage : '');
 }
 
 function buildAiDraftPrompt_(config, answerText) {

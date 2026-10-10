@@ -1537,7 +1537,7 @@ var App={
       const result=await API.call('analyzeAssignmentDraft',{
         assignmentId:S.asnId,subject:S.subj,room:S.room,student:S.stu,
         answerText,answerImageData,answerImageMime:imageFile?imageFile.type:''
-      });
+      },{timeoutMs:120000});
       if(requestId!==S.aiRequestId)return;
       if(result.error||result._n)throw new Error(result.error||'AI ไม่ตอบกลับ กรุณาลองใหม่');
       if(!result.success||!result.feedback)throw new Error('AI ไม่ได้ส่งคำแนะนำกลับมา กรุณาลองใหม่');
