@@ -381,6 +381,7 @@ function handleSubmitAssignment(p) {
   var fileUrl = "";
   if (p.fileData && p.fileName) {
     fileUrl = uploadToDrive(p.fileData, p.fileName, p.fileMime, p.subject, p.room);
+    if (!fileUrl) return { error: "อัปโหลดไฟล์ไปยัง Google Drive ไม่สำเร็จ กรุณาลองใหม่หรือตรวจสิทธิ์ Google Drive" };
   }
 
   var sheet = getSheet('Submissions');
@@ -404,9 +405,10 @@ function handleSubmitAssignment(p) {
     if (p.fileName) sheet.getRange(rowIndex, 7).setValue(p.fileName);
     if (fileUrl) sheet.getRange(rowIndex, 8).setValue(fileUrl);
     sheet.getRange(rowIndex, 9).setValue(now);
+    if (p.answerText != null) sheet.getRange(rowIndex, 11).setValue(p.answerText);
     sheet.getRange(rowIndex, 12).setValue('ออนไลน์');
   } else {
-    sheet.appendRow([subId, p.subject, p.room, p.student, p.assignment, p.link || '', p.fileName || '', fileUrl, now, '', '', 'ออนไลน์']);
+    sheet.appendRow([subId, p.subject, p.room, p.student, p.assignment, p.link || '', p.fileName || '', fileUrl, now, '', p.answerText || '', 'ออนไลน์']);
   }
 
   return { success: true, fileUrl: fileUrl, submittedAt: now };
@@ -1087,6 +1089,7 @@ function sheetToObjects(sheet) {
       else if (key === 'ชื่อไฟล์') obj.fileName = val;
       else if (key === 'URLไฟล์') obj.fileUrl = val;
       else if (key === 'เวลาส่ง') obj.submittedAt = val;
+      else if (key === 'หมายเหตุ') obj.answerText = val;
       else if (key === 'วิธีส่ง') obj.submissionMethod = val;
       else if (key === 'คะแนนที่ได้') obj.score = val;
       else if (key === 'ข้อเสนอแนะ') obj.comment = val;

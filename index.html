@@ -847,14 +847,14 @@ tr { cursor: pointer; transition: background .15s; }
       </div>
       <div id="subResLinks" style="margin-bottom:12px;"></div>
       <div class="gc" style="margin-bottom:16px;border-color:var(--ac);">
-        <div class="sec-title">🤖 ตรวจคำตอบฉบับร่างกับ AI</div>
+        <div class="sec-title">🤖 ตรวจคำตอบฉบับร่างกับ AI (ไม่บังคับ)</div>
         <div id="subAiStatus" style="font-size:.8rem;color:var(--t3);margin-bottom:10px;">กำลังตรวจสอบการตั้งค่างาน...</div>
         <div class="fg">
           <label class="lbl" for="subAiAnswer">คำตอบฉบับร่าง (พิมพ์หรือแนบภาพคำตอบ)</label>
           <textarea class="fc" id="subAiAnswer" rows="5" maxlength="12000" placeholder="อธิบายวิธีคิดหรือคำตอบของคุณ..." oninput="App.invalidateAiReview()"></textarea>
         </div>
         <div class="fg">
-          <label class="lbl" for="subAiImage">ภาพคำตอบ (ไม่บังคับ, PNG/JPEG/WebP ไม่เกิน 3 MB)</label>
+          <label class="lbl" for="subAiImage">ภาพคำตอบ (ไม่บังคับ, PNG/JPEG/WebP ไม่เกิน 3 MB) — เลือกแล้วใช้ส่งงานได้เลย ไม่ต้องอัปโหลดซ้ำ</label>
           <input type="file" class="fc" id="subAiImage" accept="image/png,image/jpeg,image/webp" onchange="App.invalidateAiReview()">
         </div>
         <button class="btn btn-g" id="subAiAnalyzeBtn" type="button" onclick="App.analyzeSubDraft()" disabled>ขอคำแนะนำจาก AI</button>
@@ -863,7 +863,7 @@ tr { cursor: pointer; transition: background .15s; }
           <button class="btn btn-o" type="button" onclick="App.editAiDraft()">ยังไม่มั่นใจ — กลับไปแก้</button>
           <button class="btn btn-p" type="button" onclick="App.approveAiDraft()">มั่นใจแล้ว — ไปยืนยันส่งงาน</button>
         </div>
-        <div id="subAiApproved" style="display:none;color:var(--ok);font-size:.82rem;font-weight:700;margin-top:10px;">✅ ตรวจร่างแล้ว กรุณาแนบไฟล์หรือลิงก์งานด้านล่างเพื่อส่งจริง</div>
+        <div id="subAiApproved" style="display:none;color:var(--ok);font-size:.82rem;font-weight:700;margin-top:10px;">✅ ตรวจร่างแล้ว เลือกส่งภาพที่แนบไว้ หรือแนบไฟล์/ลิงก์งานด้านล่างก็ได้</div>
       </div>
       <div class="fg"><label class="lbl">วางลิงก์งาน (Google Drive, Canva ฯลฯ)</label><input type="url" class="fc" id="linkIn" placeholder="https://..."></div>
       <div style="text-align:center;margin:10px 0;color:var(--t4);font-weight:700;font-size:.8rem;">— หรือ —</div>
@@ -874,7 +874,7 @@ tr { cursor: pointer; transition: background .15s; }
         </div></div>
       <div style="display:flex;gap:10px;margin-top:16px;">
         <button class="btn btn-o btn-lg" style="flex:1;" onclick="App.step(4)">ยกเลิก</button>
-        <button class="btn btn-p btn-lg" id="subWorkBtn" style="flex:2;" onclick="App.subWork()">ยืนยันส่งงาน</button>
+        <button class="btn btn-p btn-lg" id="subWorkBtn" style="flex:2;" onclick="App.subWork()">ส่งงานเลย ไม่ถาม AI</button>
       </div>
     </div>
   </div>
@@ -1499,8 +1499,8 @@ var App={
     }
     if(status.configured){
       S.aiReviewRequired=true;
-      UI.h('subAiStatus','ครูเปิดใช้ AI กับงานนี้แล้ว กรุณาวิเคราะห์คำตอบและกดยืนยันความมั่นใจก่อนส่งงาน');
-      $('subAiAnalyzeBtn').disabled=false;$('subWorkBtn').disabled=true;
+      UI.h('subAiStatus','ครูเปิดใช้ AI กับงานนี้แล้ว จะขอคำแนะนำก่อนส่งก็ได้ หรือข้ามแล้วส่งงานได้ทันที');
+      $('subAiAnalyzeBtn').disabled=false;$('subWorkBtn').disabled=false;
     }else{
       UI.h('subAiStatus','งานนี้ยังไม่ได้เปิดใช้ AI นักเรียนส่งงานตามปกติได้');
     }
@@ -1511,7 +1511,7 @@ var App={
     S.aiDraftImageData='';
     if($('subAiDecision'))$('subAiDecision').style.display='none';
     if($('subAiApproved'))$('subAiApproved').style.display='none';
-    if($('subWorkBtn'))$('subWorkBtn').disabled=S.aiReviewRequired;
+    if($('subWorkBtn'))$('subWorkBtn').disabled=false;
     if($('subAiFeedback')&&$('subAiFeedback').style.display==='block'){
       UI.h('subAiStatus','คำตอบเปลี่ยนแล้ว คำแนะนำที่เห็นเป็นของร่างก่อนหน้า กรุณาวิเคราะห์ใหม่ก่อนยืนยัน');
     }
@@ -1523,7 +1523,7 @@ var App={
     if(imageFile&&imageFile.size>3*1024*1024)return UI.toast('ภาพคำตอบต้องมีขนาดไม่เกิน 3 MB','er');
     if(imageFile&&!['image/png','image/jpeg','image/webp'].includes(imageFile.type))return UI.toast('รองรับภาพ PNG, JPEG หรือ WebP เท่านั้น','er');
     const requestId=++S.aiRequestId;
-    S.aiReviewed=false;$('subWorkBtn').disabled=S.aiReviewRequired;
+    S.aiReviewed=false;$('subWorkBtn').disabled=false;
     $('subAiDecision').style.display='none';$('subAiApproved').style.display='none';
     $('subAiFeedback').style.display='none';
     UI.load(true);
@@ -1556,7 +1556,7 @@ var App={
   },
   editAiDraft:()=>{
     S.aiReviewed=false;
-    $('subWorkBtn').disabled=S.aiReviewRequired;
+    $('subWorkBtn').disabled=false;
     $('subAiDecision').style.display='none';$('subAiApproved').style.display='none';
     UI.h('subAiStatus','ยังไม่มั่นใจใช่ไหมครับ? แก้คำตอบด้านบน แล้วขอคำแนะนำจาก AI อีกครั้ง');
     $('subAiAnswer').focus();
@@ -1603,12 +1603,10 @@ var App={
   },
   subWork:async()=>{
     const link=UI.v('linkIn'),files=$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
-    if(S.aiReviewRequired&&!S.aiReviewed)return UI.toast('กรุณาขอคำแนะนำจาก AI และยืนยันว่ามั่นใจก่อนส่งงานครับ','wn');
     if(!link&&files.length===0&&!answerImage&&!answerText)return UI.toast('กรุณาพิมพ์คำตอบ ใส่ลิงก์ หรือเลือกไฟล์งาน','wn');
-    if(!link&&files.length===0&&answerImage&&answerText)return UI.toast('มีทั้งข้อความและภาพคำตอบ กรุณาแนบไฟล์งานจริงหรือใส่ลิงก์ เพื่อส่งทั้งสองส่วนให้ครบ','wn');
     if(files.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
     UI.load(true);
-    const p={subject:S.subj,room:S.room,student:S.stu,assignment:S.asn,link};
+    const p={subject:S.subj,room:S.room,student:S.stu,assignment:S.asn,link,answerText};
     if(files.length>0){
       let totalSize=0,allImages=true;
       for(let i=0;i<files.length;i++){totalSize+=files[i].size;if(!files[i].type.startsWith('image/'))allImages=false;}
@@ -1656,7 +1654,7 @@ var App={
       UI.toast('ส่งงานเรียบร้อย','ok');
       const now=new Date().toLocaleString('th-TH');
       let ex=S.subs.find(s=>s.subject===p.subject&&s.room===p.room&&s.student===p.student&&s.assignment===p.assignment);
-      if(ex){ex.link=p.link||'';ex.fileName=p.fileName||'';ex.fileUrl=r.fileUrl||'';ex.submittedAt=now;}
+      if(ex){ex.link=p.link||'';ex.fileName=p.fileName||'';ex.fileUrl=r.fileUrl||'';ex.answerText=p.answerText||'';ex.submittedAt=now;}
       else S.subs.push({...p,id:'SUB_'+Date.now(),fileUrl:r.fileUrl||'',submittedAt:now});
       rebuildIdx();App.step(4);App.renderStuDash();
     }else UI.toast('ส่งงานล้มเหลว','er');
@@ -2429,7 +2427,7 @@ var App={
         if(sub&&!grd){dc='dot-wn';dl='รอตรวจ';rowCls='unmarked';}
         else if(sub&&grd){const isN=sub.submittedAt&&grd.gradedAt&&sub.submittedAt>grd.gradedAt;dc=isN?'dot-cy':'dot-ok';dl=isN?'ส่งใหม่หลังตรวจ!':'ตรวจแล้ว';rowCls=isN?'resubmitted':'graded';}
         const isBook=!!sub&&sub.submissionMethod==='เล่ม';const isL=sub?isLate(sub.submittedAt,a.dueDate):false;const subColor=isBook?'var(--cy)':isL?'var(--wn)':'var(--ok)';const subText=isBook?'รับงานจากเล่ม':isL?'ส่งช้ากว่ากำหนด':'ส่งแล้ว';
-        const stH=sub?`<div class="sub-box sub" style="border-color:rgba(${isL?'245,158,11':'16,185,129'},0.3);background:rgba(${isL?'245,158,11':'16,185,129'},0.1);"><span style="font-weight:700;color:${subColor};">${isBook?'เล่ม':isL?'LATE':'OK'}</span><div><div style="font-size:.8rem;font-weight:700;color:${subColor};">${subText} — ${sub.submittedAt||'-'}</div>${sub.fileName?`<a href="${sub.fileUrl}" target="_blank" class="sub-lnk">ไฟล์: ${sub.fileName}</a>`:''}${sub.link?`<a href="${sub.link}" target="_blank" class="sub-lnk">ลิงก์งาน</a>`:''}</div></div>`:`<div class="sub-box mis"><span style="font-weight:700;color:var(--er);">X</span><div><div style="font-size:.8rem;font-weight:700;color:var(--er);">ยังไม่ส่งงาน</div><button class="btn btn-o btn-sm" style="margin-top:8px;" onclick="App.markBookSubmission('${S.tab}','${room}','${stuEsc}','${a.id}')">รับงานจากเล่ม</button></div></div>`;
+        const stH=sub?`<div class="sub-box sub" style="border-color:rgba(${isL?'245,158,11':'16,185,129'},0.3);background:rgba(${isL?'245,158,11':'16,185,129'},0.1);"><span style="font-weight:700;color:${subColor};">${isBook?'เล่ม':isL?'LATE':'OK'}</span><div><div style="font-size:.8rem;font-weight:700;color:${subColor};">${subText} — ${sub.submittedAt||'-'}</div>${sub.fileName?`<a href="${sub.fileUrl}" target="_blank" class="sub-lnk">ไฟล์: ${sub.fileName}</a>`:''}${sub.link?`<a href="${sub.link}" target="_blank" class="sub-lnk">ลิงก์งาน</a>`:''}${sub.answerText?`<div style="font-size:.8rem;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;">คำตอบ: ${_esc(sub.answerText)}</div>`:''}</div></div>`:`<div class="sub-box mis"><span style="font-weight:700;color:var(--er);">X</span><div><div style="font-size:.8rem;font-weight:700;color:var(--er);">ยังไม่ส่งงาน</div><button class="btn btn-o btn-sm" style="margin-top:8px;" onclick="App.markBookSubmission('${S.tab}','${room}','${stuEsc}','${a.id}')">รับงานจากเล่ม</button></div></div>`;
         const catTag = (a.category==='pre'||a.category==='post') ? `<span class="bd bd-cat" style="font-size:.6rem;">${catLbl(a.category)}</span>` : '';
         return `<div class="asn-row ${rowCls}"><div class="asn-name">${dc?`<span class="dot ${dc}" title="${dl}"></span>`:''}${a.name}<span class="asn-max">(${a.maxScore} คะแนน)</span>${catTag}${dc==='dot-cy'?` <span class="bd bd-new" style="font-size:.64rem;">ส่งใหม่!</span>`:dc==='dot-wn'&&sub?` <span class="bd bd-wn" style="font-size:.64rem;">รอตรวจ</span>`:''}</div>${stH}${sub?`<div class="grd-sec"><div class="lbl" style="margin-bottom:6px;">ให้คะแนน</div><div class="qsw">${scores.map(s=>`<button class="qsb${grd&&Number(grd.score)===s?' on':''}" onclick="App.qsc('g_${a.id}','${s}',this)">${s}</button>`).join('')}</div><div style="display:flex;gap:7px;align-items:center;"><input type="number" id="g_${a.id}" class="fc" value="${grd?grd.score:''}" min="0" max="${maxS}" style="width:68px;text-align:center;font-weight:700;color:var(--cy);font-size:.98rem;"><input type="text" id="c_${a.id}" class="fc" value="${grd?grd.comment:''}" placeholder="ข้อเสนอแนะ..." style="flex:1;"><button class="btn btn-p btn-sm" onclick="App.saveGrd('${room}','${stu.replace(/'/g,"\\'").replace(/"/g,"&quot;")}','${a.id}')">บันทึก</button></div>${grd?`<div style="font-size:.68rem;color:var(--t4);margin-top:4px;">ตรวจล่าสุด: ${grd.gradedAt||'-'}</div>`:''}</div>`:''}</div>`;
       }).join('')}</div></div>`;
@@ -3200,6 +3198,10 @@ function bootApp(){
     }
 
     App.fetch(false); // โหลดข้อมูลเงียบๆ ตั้งแต่หน้าแรก เพื่อให้ตัวเลขสถิติบนหน้าแรกเป็นข้อมูลจริง
+    window.setInterval(function(){
+      const teacherPage=$('pg-tc');
+      if(teacherPage&&teacherPage.classList.contains('active'))App.fetch(false);
+    },20000);
     if(typeof google!=='undefined'&&google.script&&google.script.run){
       API.ping().then(function(ok){
         if(!ok)console.warn('Backend ping failed — run setupOnce() in Apps Script editor');
