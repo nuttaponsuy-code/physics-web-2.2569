@@ -442,7 +442,7 @@ tr { cursor: pointer; transition: background .15s; }
 
 
 <!-- LOADER -->
-<div class="ldOv" id="ldr"><div class="spn"></div><div style="font-weight:600;letter-spacing:.05em;">กำลังโหลดข้อมูล...</div></div>
+<div class="ldOv" id="ldr"><div class="spn"></div><div id="ldrMsg" style="font-weight:600;letter-spacing:.05em;">กำลังโหลดข้อมูล...</div></div>
 
 
 <!-- TOAST BOX -->
@@ -1933,6 +1933,9 @@ var App={
     if (!S.impRosterObj) return;
     const adminPassword=UI.v('rosterAdminPassword');
     if(!adminPassword)return UI.toast('กรุณากรอกรหัสผู้ดูแลรายชื่อ','wn');
+    const button=$('impRosterBtn');
+    if(button)button.disabled=true;
+    $('ldrMsg').textContent=`กำลังบันทึกรายชื่อนักเรียน ${Object.values(S.impRosterObj).reduce((sum,rooms)=>sum+Object.values(rooms).reduce((roomSum,students)=>roomSum+students.length,0),0)} คนลง Google Sheet...`;
     UI.load(true);
     try {
       const result=await API.call('saveRoster',{roster:S.impRosterObj,adminPassword});
@@ -1949,6 +1952,8 @@ var App={
       UI.toast('บันทึกรายชื่อไม่สำเร็จ: ' + e.message, 'er');
     } finally {
       UI.sv('rosterAdminPassword','');
+      if(button)button.disabled=false;
+      $('ldrMsg').textContent='กำลังโหลดข้อมูล...';
       UI.load(false);
     }
   },

@@ -35,6 +35,18 @@ function doPost(e) {
     }
   }
 
+  if (action === 'getAll' || action === 'getRoster' || action === 'verifyRosterStudent') {
+    try {
+      var readResult;
+      if (action === 'getAll') readResult = handleGetAll();
+      else if (action === 'getRoster') readResult = handleGetRoster(payload);
+      else readResult = handleVerifyRosterStudent(payload);
+      return respondJSON(readResult);
+    } catch (err) {
+      return respondJSON({ error: err.toString() });
+    }
+  }
+
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000); // ป้องกัน race condition เมื่อมีการเขียนพร้อมกัน
@@ -46,20 +58,11 @@ function doPost(e) {
     var result;
 
     switch (action) {
-      case 'getAll':
-        result = handleGetAll();
-        break;
-      case 'getRoster':
-        result = handleGetRoster(payload);
-        break;
       case 'saveRoster':
         result = handleSaveRoster(payload);
         break;
       case 'clearRoster':
         result = handleClearRoster(payload);
-        break;
-      case 'verifyRosterStudent':
-        result = handleVerifyRosterStudent(payload);
         break;
       case 'submitAssignment':
         result = handleSubmitAssignment(payload);
@@ -307,14 +310,14 @@ function handleSaveRoster(p) {
   });
   if (!rows.length) return { error: 'ไม่พบรายชื่อนักเรียนในไฟล์' };
 
+  var importedCount = rows.length;
   var sheet = getSheet('Roster');
-  var previousLastRow = sheet.getLastRow();
-  sheet.getRange(2, 1, rows.length, 4).setNumberFormat('@').setValues(rows);
-  var firstUnusedRow = rows.length + 2;
-  if (previousLastRow >= firstUnusedRow) {
-    sheet.getRange(firstUnusedRow, 1, previousLastRow - firstUnusedRow + 1, 4).clearContent();
-  }
-  return { success: true, imported: rows.length };
+  var previousDataRows = Math.max(0, sheet.getLastRow() - 1);
+  var writeRowCount = Math.max(previousDataRows, rows.length);
+  while (rows.length < writeRowCount) rows.push(['', '', '', '']);
+  sheet.getRange(2, 3, writeRowCount, 1).setNumberFormat('@');
+  sheet.getRange(2, 1, writeRowCount, 4).setValues(rows);
+  return { success: true, imported: importedCount };
 }
 
 function handleClearRoster(p) {
