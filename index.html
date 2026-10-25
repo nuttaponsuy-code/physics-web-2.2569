@@ -769,7 +769,15 @@ tr { cursor: pointer; transition: background .15s; }
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">ยืนยันตัวตนด้วยเลขประจำตัว</div><button class="btn btn-g btn-sm" onclick="App.step(2)">← กลับ</button></div>
       <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">ระบบจะตรวจรหัสกับ Google Sheet และแสดงเฉพาะชื่อของคุณ</div>
       <input type="text" inputmode="numeric" class="fc" id="stuSel" maxlength="50" placeholder="เลขประจำตัวนักเรียน" style="margin-bottom:16px;font-weight:600;font-size:1rem;">
-      <button class="btn btn-p btn-lg" onclick="App.confStu()">ตรวจสอบและเข้าสู่ระบบ</button>
+      <div style="padding:12px;margin-bottom:14px;border:1px solid var(--in-bd);border-radius:10px;background:var(--in-b);font-size:.78rem;line-height:1.65;color:var(--t2);">
+        <div style="font-weight:700;color:var(--t1);margin-bottom:5px;">การใช้ข้อมูลส่วนบุคคล</div>
+        ระบบใช้ชื่อ เลขประจำตัว ชั้น/ห้อง ข้อมูลการส่งงาน คะแนน และข้อเสนอแนะ เพื่อยืนยันตัวตนและติดตามการเรียน โดยจัดเก็บผ่าน Google Sheets/Drive และครูผู้สอนเข้าถึงเพื่อจัดการเรียนการสอนได้ หากเลือกขอคำแนะนำจาก AI ข้อความหรือภาพคำตอบที่ส่งให้ AI จะถูกประมวลผลเพื่อให้คำแนะนำ การใช้ AI เป็นทางเลือกและข้ามได้
+        <label style="display:flex;align-items:flex-start;gap:9px;margin-top:10px;color:var(--t1);font-weight:600;cursor:pointer;">
+          <input type="checkbox" id="studentPrivacyConsent" style="margin-top:3px;flex:0 0 auto;">
+          <span>ข้าพเจ้าอ่านและรับทราบการใช้ข้อมูลข้างต้น และยินยอมให้ใช้ข้อมูลเพื่อวัตถุประสงค์ดังกล่าว</span>
+        </label>
+      </div>
+      <button class="btn btn-p btn-lg" onclick="App.confStu()">ยินยอมและตรวจสอบข้อมูล</button>
     </div>
 
 
@@ -1332,7 +1340,7 @@ var App={
     [1,2,3,4,5].forEach(i=>{UI.hide('ss'+i);const s=$(i>4?'st4':'st'+i);if(s)s.classList.remove('active');});
     UI.show('ss'+n);const s=$(n>4?'st4':'st'+n);if(s)s.classList.add('active');
   },
-  selSubj:sj=>{S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');App.step(2);},
+  selSubj:sj=>{S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');if($('studentPrivacyConsent'))$('studentPrivacyConsent').checked=false;App.step(2);},
   confirmRoom:()=>{
     const room=UI.v('roomIn').trim();
     if(!room)return UI.toast('กรุณากรอกชั้น/ห้องเรียน','wn');
@@ -1341,9 +1349,10 @@ var App={
   confStu:async()=>{
     const studentId=UI.v('stuSel').trim();
     if(!studentId)return UI.toast('กรุณากรอกเลขประจำตัวนักเรียน','wn');
+    if(!$('studentPrivacyConsent')||!$('studentPrivacyConsent').checked)return UI.toast('กรุณาอ่านและยืนยันการใช้ข้อมูลส่วนบุคคลก่อนเข้าสู่ระบบ','wn');
     UI.load(true);
     try{
-      const result=await API.call('verifyRosterStudent',{subject:S.subj,room:S.room,studentId});
+      const result=await API.call('confirmStudentConsent',{subject:S.subj,room:S.room,studentId,accepted:true,noticeVersion:'2026-10-25-v1'});
       if(result.error||!result.success||!result.name)throw new Error(result.error||'ตรวจสอบรายชื่อไม่สำเร็จ');
       S.studentId=studentId;S.stu=result.name;
       App.renderStuDash();App.step(4);

@@ -78,6 +78,9 @@ function doPost(e) {
       case 'clearRoster':
         result = handleClearRoster(payload);
         break;
+      case 'confirmStudentConsent':
+        result = handleConfirmStudentConsent(payload);
+        break;
       case 'submitAssignment':
         result = handleSubmitAssignment(payload);
         break;
@@ -199,6 +202,9 @@ function initSheetHeaders(sheet, sheetName) {
       break;
     case 'Roster':
       headers = ['วิชา', 'ห้อง', 'เลขประจำตัว', 'ชื่อ-นามสกุล'];
+      break;
+    case 'PrivacyConsents':
+      headers = ['ยืนยันเมื่อ', 'เวอร์ชันประกาศ', 'วิชา', 'ห้อง', 'เลขประจำตัว', 'ชื่อ-นามสกุล', 'ยินยอม'];
       break;
   }
   if (headers.length > 0) {
@@ -342,6 +348,34 @@ function handleClearRoster(p) {
 }
 
 function handleVerifyRosterStudent(p) {
+  return findRosterStudent_(p);
+}
+
+function handleConfirmStudentConsent(p) {
+  if (p.accepted !== true) return { error: 'ต้องยืนยันการใช้ข้อมูลส่วนบุคคลก่อนเข้าสู่ระบบ' };
+  if (String(p.noticeVersion || '') !== getStudentPrivacyNoticeVersion_()) {
+    return { error: 'ประกาศการใช้ข้อมูลมีการปรับปรุง กรุณาโหลดหน้าเว็บใหม่และอ่านประกาศล่าสุด' };
+  }
+  var verification = findRosterStudent_(p);
+  if (!verification.success) return verification;
+
+  getSheet('PrivacyConsents').appendRow([
+    new Date(),
+    getStudentPrivacyNoticeVersion_(),
+    String(p.subject).trim(),
+    String(p.room).trim(),
+    String(p.studentId).trim(),
+    verification.name,
+    'ยินยอม'
+  ]);
+  return { success: true, name: verification.name };
+}
+
+function getStudentPrivacyNoticeVersion_() {
+  return '2026-10-25-v1';
+}
+
+function findRosterStudent_(p) {
   var subject = String(p.subject || '').trim();
   var room = String(p.room || '').trim();
   var studentId = String(p.studentId || '').trim();
