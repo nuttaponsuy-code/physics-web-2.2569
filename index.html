@@ -760,25 +760,26 @@ tr { cursor: pointer; transition: background .15s; }
     <div class="gc" id="ss2" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">เลือกห้องเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(1)">← กลับ</button></div>
       <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">เลือกห้องจากรายชื่อที่ครูนำเข้าไว้ในระบบ</div>
-      <select class="fc" id="roomIn" style="margin-bottom:8px;" disabled><option value="">กำลังโหลดห้องเรียน...</option></select>
-      <div id="roomLoadStatus" style="font-size:.76rem;color:var(--t3);margin-bottom:14px;"></div>
-      <button class="btn btn-p btn-lg" onclick="App.confirmRoom()">ถัดไป</button>
-    </div>
-
-
-    <div class="gc" id="ss3" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">ยืนยันตัวตนด้วยเลขประจำตัว</div><button class="btn btn-g btn-sm" onclick="App.step(2)">← กลับ</button></div>
-      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">ระบบจะตรวจรหัสกับ Google Sheet และแสดงเฉพาะชื่อของคุณ</div>
-      <input type="text" inputmode="numeric" class="fc" id="stuSel" maxlength="50" placeholder="เลขประจำตัวนักเรียน" style="margin-bottom:16px;font-weight:600;font-size:1rem;">
-      <div style="padding:12px;margin-bottom:14px;border:1px solid var(--in-bd);border-radius:10px;background:var(--in-b);font-size:.78rem;line-height:1.65;color:var(--t2);">
+      <select class="fc" id="roomIn" style="margin-bottom:12px;" disabled><option value="">กำลังโหลดห้องเรียน...</option></select>
+      <div id="roomLoadStatus" style="font-size:.76rem;color:var(--t3);margin-bottom:10px;"></div>
+      <div id="studentPrivacyNotice" style="padding:12px;margin-bottom:14px;border:1px solid var(--in-bd);border-radius:10px;background:var(--in-b);font-size:.78rem;line-height:1.65;color:var(--t2);">
         <div style="font-weight:700;color:var(--t1);margin-bottom:5px;">การใช้ข้อมูลส่วนบุคคล</div>
-        ระบบใช้ชื่อ เลขประจำตัว ชั้น/ห้อง ข้อมูลการส่งงาน คะแนน และข้อเสนอแนะ เพื่อยืนยันตัวตนและติดตามการเรียน โดยจัดเก็บผ่าน Google Sheets/Drive และครูผู้สอนเข้าถึงเพื่อจัดการเรียนการสอนได้ หากเลือกขอคำแนะนำจาก AI ข้อความหรือภาพคำตอบที่ส่งให้ AI จะถูกประมวลผลเพื่อให้คำแนะนำ การใช้ AI เป็นทางเลือกและข้ามได้
+        ระบบใช้ชื่อ เลขประจำตัว ชั้น/ห้อง ข้อมูลการส่งงาน คะแนน และข้อเสนอแนะ เพื่อติดตามการเรียน จัดเก็บผ่าน Google Sheets/Drive และครูผู้สอนเข้าถึงเพื่อจัดการเรียนการสอนได้ หากเลือกขอคำแนะนำจาก AI ข้อความหรือภาพคำตอบจะถูกส่งไปประมวลผลเพื่อให้คำแนะนำ โดย AI เป็นทางเลือกและข้ามได้
         <label style="display:flex;align-items:flex-start;gap:9px;margin-top:10px;color:var(--t1);font-weight:600;cursor:pointer;">
           <input type="checkbox" id="studentPrivacyConsent" style="margin-top:3px;flex:0 0 auto;">
           <span>ข้าพเจ้าอ่านและรับทราบการใช้ข้อมูลข้างต้น และยินยอมให้ใช้ข้อมูลเพื่อวัตถุประสงค์ดังกล่าว</span>
         </label>
       </div>
-      <button class="btn btn-p btn-lg" onclick="App.confStu()">ยินยอมและตรวจสอบข้อมูล</button>
+      <button class="btn btn-p btn-lg" onclick="App.confirmRoom()">ถัดไป</button>
+    </div>
+
+
+    <div class="gc" id="ss3" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">เลือกรายชื่อนักเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(2)">← กลับ</button></div>
+      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">เลือกรายชื่อของตนเอง ไม่ต้องกรอกเลขประจำตัวเพื่อเข้าดูงาน</div>
+      <select class="fc" id="stuSel" style="margin-bottom:8px;" disabled><option value="">กำลังโหลดรายชื่อ...</option></select>
+      <div id="studentLoadStatus" style="font-size:.76rem;color:var(--t3);margin-bottom:14px;"></div>
+      <button class="btn btn-p btn-lg" id="studentEnterBtn" onclick="App.confStu()" disabled>เข้าสู่ระบบ</button>
     </div>
 
 
@@ -1129,7 +1130,7 @@ const Res={
 let S={
   asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',studentId:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
   rosterSummary:{},
-  roomLoadId:0,
+  roomLoadId:0,studentLoadId:0,
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
   rId:null,rName:'',_dbt:null,_cached:false,
@@ -1344,6 +1345,10 @@ var App={
   },
   selSubj:async sj=>{
     S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');
+    const consentKey='studentPrivacyConsent_2026-10-25-v2';
+    let hasConsent=false;
+    try{hasConsent=localStorage.getItem(consentKey)==='true';}catch(error){console.error('Privacy consent storage read failed',error);}
+    if($('studentPrivacyNotice'))$('studentPrivacyNotice').style.display=hasConsent?'none':'block';
     if($('studentPrivacyConsent'))$('studentPrivacyConsent').checked=false;
     App.step(2);
     const requestId=++S.roomLoadId,select=$('roomIn'),status=$('roomLoadStatus');
@@ -1368,27 +1373,59 @@ var App={
       UI.toast('โหลดรายชื่อห้องไม่สำเร็จ: '+error.message,'er');
     }
   },
-  confirmRoom:()=>{
+  confirmRoom:async()=>{
     const room=UI.v('roomIn').trim();
     if(!$('roomIn')||$('roomIn').disabled)return UI.toast('ยังโหลดรายชื่อห้องไม่สำเร็จ กรุณาลองใหม่อีกครั้ง','wn');
     if(!room)return UI.toast('กรุณาเลือกห้องเรียน','wn');
-    S.room=room;UI.sv('stuSel','');App.step(3);
-  },
-  confStu:async()=>{
-    const studentId=UI.v('stuSel').trim();
-    if(!studentId)return UI.toast('กรุณากรอกเลขประจำตัวนักเรียน','wn');
-    if(!$('studentPrivacyConsent')||!$('studentPrivacyConsent').checked)return UI.toast('กรุณาอ่านและยืนยันการใช้ข้อมูลส่วนบุคคลก่อนเข้าสู่ระบบ','wn');
-    UI.load(true);
-    try{
-      const result=await API.call('confirmStudentConsent',{subject:S.subj,room:S.room,studentId,accepted:true,noticeVersion:'2026-10-25-v1'});
-      if(result.error||!result.success||!result.name)throw new Error(result.error||'ตรวจสอบรายชื่อไม่สำเร็จ');
-      S.studentId=studentId;S.stu=result.name;
-      App.renderStuDash();App.step(4);
-    }catch(error){
-      UI.toast('ตรวจสอบรายชื่อไม่สำเร็จ: '+error.message,'er');
-    }finally{
+    const consentKey='studentPrivacyConsent_2026-10-25-v2';
+    let hasConsent=false;
+    try{hasConsent=localStorage.getItem(consentKey)==='true';}catch(error){console.error('Privacy consent storage read failed',error);}
+    if(!hasConsent){
+      if(!$('studentPrivacyConsent')||!$('studentPrivacyConsent').checked)return UI.toast('กรุณาอ่านและยืนยันการใช้ข้อมูลส่วนบุคคลก่อนดำเนินการ','wn');
+      UI.load(true);
+      try{
+        const consent=await API.call('confirmRoomPrivacyConsent',{subject:S.subj,room,accepted:true,noticeVersion:'2026-10-25-v2'});
+        if(consent.error||!consent.success)throw new Error(consent.error||'บันทึกการยืนยันไม่สำเร็จ');
+        try{localStorage.setItem(consentKey,'true');}catch(error){console.error('Privacy consent storage write failed',error);}
+      }catch(error){
+        UI.toast('บันทึกการยืนยันการใช้ข้อมูลไม่สำเร็จ: '+error.message,'er');
+        UI.load(false);
+        return;
+      }
       UI.load(false);
     }
+    S.room=room;S.stu='';S.studentId='';UI.sv('stuSel','');
+    const select=$('stuSel'),status=$('studentLoadStatus'),requestId=++S.studentLoadId;
+    select.disabled=true;select.innerHTML='<option value="">กำลังโหลดรายชื่อ...</option>';
+    $('studentEnterBtn').disabled=true;
+    if(status)status.textContent='';
+    App.step(3);
+    try{
+      const result=await API.call('getRosterStudents',{subject:S.subj,room});
+      if(requestId!==S.studentLoadId)return;
+      if(result.error||!result.success||!Array.isArray(result.students))throw new Error(result.error||'โหลดรายชื่อนักเรียนไม่สำเร็จ');
+      if(!result.students.length){
+        select.innerHTML='<option value="">ไม่พบรายชื่อในห้องนี้</option>';
+        $('studentEnterBtn').disabled=true;
+        if(status)status.textContent='กรุณาแจ้งครูตรวจสอบรายชื่อใน Google Sheet';
+        return;
+      }
+      select.innerHTML='<option value="">— เลือกชื่อตนเอง —</option>'+result.students.map(student=>'<option value="'+_esc(student)+'">'+_esc(student)+'</option>').join('');
+      select.disabled=false;
+      $('studentEnterBtn').disabled=false;
+      if(status)status.textContent='พบ '+result.students.length+' รายชื่อ';
+    }catch(error){
+      if(requestId!==S.studentLoadId)return;
+      select.innerHTML='<option value="">โหลดรายชื่อไม่สำเร็จ</option>';
+      if(status)status.textContent='โหลดรายชื่อไม่สำเร็จ: '+error.message;
+      UI.toast('โหลดรายชื่อนักเรียนไม่สำเร็จ: '+error.message,'er');
+    }
+  },
+  confStu:()=>{
+    const studentName=UI.v('stuSel').trim();
+    if(!studentName)return UI.toast('กรุณาเลือกรายชื่อตนเองก่อนเข้าสู่ระบบ','wn');
+    S.studentId='';S.stu=studentName;
+    App.renderStuDash();App.step(4);
   },
 
 
@@ -2205,22 +2242,24 @@ var App={
     openM('mUnlockScore');
   },
 
-  verifyUnlockPin: () => {
+  verifyUnlockPin: async() => {
     const entered = UI.v('pinIn').trim();
     if (!entered) return UI.toast('กรุณากรอกเลขประจำตัวนักเรียนก่อนครับ', 'wn');
-    
-    const expectedId = S.studentId;
-    if (!expectedId) {
-      return UI.toast('ไม่พบเลขประจำตัวที่ยืนยันแล้ว กรุณาออกจากระบบและตรวจสอบใหม่', 'er');
-    }
-    if (entered === expectedId) {
+    UI.load(true);
+    try{
+      const result=await API.call('verifyStudentScoreUnlock',{
+        subject:S.subj,room:S.room,studentName:S.stu,studentId:entered
+      });
+      if(result.error||!result.success)throw new Error(result.error||'ยืนยันเลขประจำตัวไม่สำเร็จ');
       const stuKey = `unlocked_v2_${S.subj}_${S.room}_${S.stu}`;
       localStorage.setItem(stuKey, 'true');
       closeM('mUnlockScore');
       UI.toast('ปลดล็อกดูคะแนนส่วนตัวเรียบร้อยแล้ว 🔓', 'ok');
       App.renderStuDash();
-    } else {
-      UI.toast('เลขประจำตัวนักเรียนไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง', 'er');
+    }catch(error){
+      UI.toast('ปลดล็อกคะแนนไม่สำเร็จ: '+error.message,'er');
+    }finally{
+      UI.load(false);
     }
   },
 

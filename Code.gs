@@ -35,12 +35,14 @@ function doPost(e) {
     }
   }
 
-  if (action === 'getAll' || action === 'getRoster' || action === 'getRosterRooms' || action === 'verifyRosterStudent') {
+  if (action === 'getAll' || action === 'getRoster' || action === 'getRosterRooms' ||
+      action === 'getRosterStudents' || action === 'verifyRosterStudent') {
     try {
       var readResult;
       if (action === 'getAll') readResult = handleGetAll();
       else if (action === 'getRoster') readResult = handleGetRoster(payload);
       else if (action === 'getRosterRooms') readResult = handleGetRosterRooms(payload);
+      else if (action === 'getRosterStudents') readResult = handleGetRosterStudents(payload);
       else readResult = handleVerifyRosterStudent(payload);
       return respondJSON(readResult);
     } catch (err) {
@@ -81,6 +83,12 @@ function doPost(e) {
         break;
       case 'confirmStudentConsent':
         result = handleConfirmStudentConsent(payload);
+        break;
+      case 'confirmRoomPrivacyConsent':
+        result = handleConfirmRoomPrivacyConsent(payload);
+        break;
+      case 'verifyStudentScoreUnlock':
+        result = handleVerifyStudentScoreUnlock(payload);
         break;
       case 'submitAssignment':
         result = handleSubmitAssignment(payload);
@@ -301,6 +309,21 @@ function handleGetRosterRooms(p) {
   return { success: true, rooms: Object.keys(rooms).sort() };
 }
 
+function handleGetRosterStudents(p) {
+  var subject = String(p.subject || '').trim();
+  var room = String(p.room || '').trim();
+  if (!subject || !room) return { error: 'กรุณาเลือกรายวิชาและห้องเรียนก่อนโหลดรายชื่อ' };
+  var rows = getSheet('Roster').getDataRange().getValues();
+  var students = {};
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0] || '').trim() !== subject ||
+        String(rows[i][1] || '').trim() !== room) continue;
+    var name = String(rows[i][3] || '').trim();
+    if (name) students[name] = true;
+  }
+  return { success: true, students: Object.keys(students).sort() };
+}
+
 function handleSaveRoster(p) {
   if (!verifyRosterAdminPassword_(p.adminPassword)) {
     return { error: 'รหัสผู้ดูแลรายชื่อไม่ถูกต้อง หรือยังไม่ได้ตั้งค่า ROSTER_ADMIN_PASSWORD' };
@@ -385,8 +408,45 @@ function handleConfirmStudentConsent(p) {
   return { success: true, name: verification.name };
 }
 
+function handleConfirmRoomPrivacyConsent(p) {
+  var subject = String(p.subject || '').trim();
+  var room = String(p.room || '').trim();
+  if (!subject || !room) return { error: 'กรุณาเลือกรายวิชาและห้องเรียนก่อนยืนยัน' };
+  if (p.accepted !== true) return { error: 'ต้องยืนยันการใช้ข้อมูลส่วนบุคคลก่อนดำเนินการ' };
+  if (String(p.noticeVersion || '') !== getStudentPrivacyNoticeVersion_()) {
+    return { error: 'ประกาศการใช้ข้อมูลมีการปรับปรุง กรุณาโหลดหน้าเว็บใหม่และอ่านประกาศล่าสุด' };
+  }
+
+  var rosterRows = getSheet('Roster').getDataRange().getValues();
+  var roomExists = rosterRows.some(function(row, index) {
+    return index > 0 && String(row[0] || '').trim() === subject &&
+      String(row[1] || '').trim() === room && String(row[3] || '').trim();
+  });
+  if (!roomExists) return { error: 'ไม่พบรายชื่อในห้องนี้ กรุณาติดต่อครูผู้สอน' };
+
+  getSheet('PrivacyConsents').appendRow([
+    new Date(),
+    getStudentPrivacyNoticeVersion_(),
+    subject,
+    room,
+    '',
+    '',
+    'ยินยอม (ยืนยันบนเบราว์เซอร์)'
+  ]);
+  return { success: true };
+}
+
+function handleVerifyStudentScoreUnlock(p) {
+  var studentName = String(p.studentName || '').trim();
+  if (!studentName) return { error: 'ไม่พบชื่อนักเรียน กรุณาออกจากระบบแล้วเลือกชื่อใหม่' };
+  var verification = findRosterStudent_(p);
+  if (!verification.success) return verification;
+  if (verification.name !== studentName) return { error: 'เลขประจำตัวไม่ตรงกับรายชื่อที่เลือก' };
+  return { success: true };
+}
+
 function getStudentPrivacyNoticeVersion_() {
-  return '2026-10-25-v1';
+  return '2026-10-25-v2';
 }
 
 function findRosterStudent_(p) {
