@@ -290,6 +290,32 @@
     padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:.2s;
   }
   .icon-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+  .icon-btn.speech-tool{background:linear-gradient(135deg,#6d28d9,#4338ca);border-color:#6d28d9;color:#fff;}
+  .icon-btn.speech-tool:hover,.icon-btn.speech-tool[aria-expanded="true"]{background:linear-gradient(135deg,#5b21b6,#3730a3);border-color:#5b21b6;color:#fff;}
+  .speech-panel{
+    max-width:1000px;margin:0 auto 24px;padding:20px;
+    border:2px solid #7c3aed;border-radius:16px;
+    background:linear-gradient(135deg,#f5f3ff,#eef2ff);
+    box-shadow:0 12px 32px rgba(67,56,202,.18);text-align:left;
+  }
+  .speech-panel[hidden]{display:none;}
+  .speech-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .speech-panel-title{font-family:'Kanit',sans-serif;font-size:19px;font-weight:700;color:#312e81;}
+  .speech-status{font-size:13px;font-weight:700;color:#475569;}
+  .speech-status.listening{color:#b91c1c;}
+  .speech-status.listening::before{content:'● ';color:#ef4444;animation:pulse 1s infinite;}
+  .speech-controls{display:flex;gap:8px;flex-wrap:wrap;}
+  .speech-controls .btn{padding:10px 16px;}
+  .speech-controls .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .speech-transcript{
+    min-height:94px;max-height:30vh;overflow:auto;padding:18px 20px;
+    border-radius:12px;background:#1e1b4b;border:1px solid #4338ca;
+    color:#fff;font-size:clamp(20px,2.6vw,30px);font-weight:600;line-height:1.7;
+    white-space:pre-wrap;overflow-wrap:anywhere;
+  }
+  .speech-transcript:empty::before{content:'ข้อความที่ครูพูดจะปรากฏตรงนี้';color:#c7d2fe;}
+  .speech-interim{color:#fde68a;}
+  .speech-hint{margin-top:10px;color:#3730a3;font-size:13px;line-height:1.5;}
 
   .timer-wrap{display:flex;align-items:center;gap:12px;margin:20px 0;}
   .timer-display{
@@ -550,6 +576,7 @@
         <div class="live-tools">
           <button class="icon-btn" id="toggleQrBtn">📱 QR Code</button>
           <button class="icon-btn" id="toggleTimerBtn">⏱️ ตั้งเวลา</button>
+          <button class="icon-btn speech-tool" id="toggleSpeechBtn" aria-expanded="false" aria-controls="speechPanel">🎙️ คำอธิบายสด</button>
           <button class="icon-btn" id="fullscreenBtn">⛶ เต็มจอ</button>
         </div>
       </div>
@@ -597,6 +624,22 @@
         <div class="total-line" id="totalVotes"></div>
       </div>
 
+      <section class="speech-panel" id="speechPanel" aria-label="เครื่องมือถอดเสียงคำอธิบาย" hidden>
+        <div class="speech-panel-head">
+          <div>
+            <div class="speech-panel-title">🎙️ คำอธิบายจากครู</div>
+            <div class="speech-status" id="speechStatus" role="status">พร้อมเริ่มฟัง</div>
+          </div>
+          <div class="speech-controls">
+            <button class="btn btn-primary" id="speechStartBtn" type="button">▶ เริ่มถอดเสียง</button>
+            <button class="btn btn-danger" id="speechStopBtn" type="button" disabled>⏹ หยุด</button>
+            <button class="btn btn-secondary" id="speechClearBtn" type="button">ล้างข้อความ</button>
+          </div>
+        </div>
+        <div class="speech-transcript" id="speechTranscript" aria-live="polite"></div>
+        <div class="speech-hint">ข้อความแสดงสดบนจอนี้เท่านั้น ไม่ได้บันทึกลงระบบโพล แต่เสียงอาจถูกประมวลผลโดยบริการของเบราว์เซอร์ตามนโยบายผู้ให้บริการ ใช้ Chrome หรือ Edge และอนุญาตให้ใช้ไมโครโฟน</div>
+      </section>
+
       <div class="live-actions">
         <button class="btn btn-danger" id="closePollBtn">⏹️ ปิดโพล & บันทึกผล</button>
         <button class="btn btn-secondary" id="newPollBtn">🔄 ตั้งคำถามใหม่</button>
@@ -635,6 +678,36 @@ const db = getFirestore(app);
 
 const CHALK = ['#7c5cff','#00e0ff','#ff4d8d','#00e676','#ffd166','#ff6b35'];
 const chalkColor = i => CHALK[i % CHALK.length];
+let speechRecognition = null;
+let speechListening = false;
+let speechFinalText = "";
+let speechErrorMessage = "";
+
+function renderSpeechTranscript(interimText = "") {
+  const transcript = document.getElementById("speechTranscript");
+  transcript.replaceChildren(document.createTextNode(speechFinalText));
+  if (interimText) {
+    const interim = document.createElement("span");
+    interim.className = "speech-interim";
+    interim.textContent = `${speechFinalText ? " " : ""}${interimText}`;
+    transcript.appendChild(interim);
+  }
+}
+
+function updateSpeechControls(status) {
+  document.getElementById("speechStartBtn").disabled = speechListening;
+  document.getElementById("speechStopBtn").disabled = !speechListening;
+  const statusEl = document.getElementById("speechStatus");
+  statusEl.textContent = status;
+  statusEl.classList.toggle("listening", speechListening);
+}
+
+function stopSpeechListening() {
+  if (!speechListening) return;
+  speechListening = false;
+  updateSpeechControls("หยุดฟังแล้ว");
+  if (speechRecognition) speechRecognition.stop();
+}
 
 // ---------------------------------------------------------------------------
 // GSAP safety wrapper
@@ -1011,6 +1084,7 @@ function showLive() {
   liveView.style.display = "block";
 }
 function showSetup() {
+  stopSpeechListening();
   document.body.classList.remove("present-mode");
   document.getElementById("liveView").style.display = "none";
   document.getElementById("setupView").style.display = "block";
@@ -1265,6 +1339,85 @@ document.getElementById("toggleQrBtn").addEventListener("click", () => {
   const row = document.getElementById("qrRow");
   row.style.display = row.style.display === "none" ? "flex" : "none";
 });
+document.getElementById("toggleSpeechBtn").addEventListener("click", (event) => {
+  const panel = document.getElementById("speechPanel");
+  const isOpening = panel.hidden;
+  if (!isOpening && speechListening) stopSpeechListening();
+  panel.hidden = !isOpening;
+  event.currentTarget.setAttribute("aria-expanded", String(isOpening));
+});
+document.getElementById("speechStartBtn").addEventListener("click", () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    updateSpeechControls("เบราว์เซอร์นี้ไม่รองรับการถอดเสียง");
+    showToast("ไม่รองรับการถอดเสียงสด กรุณาเปิดด้วย Chrome หรือ Edge", "error");
+    return;
+  }
+
+  if (!speechRecognition) {
+    speechRecognition = new SpeechRecognition();
+    speechRecognition.lang = "th-TH";
+    speechRecognition.continuous = true;
+    speechRecognition.interimResults = true;
+    speechRecognition.onresult = (event) => {
+      let interimText = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          const phrase = result[0].transcript.trim();
+          if (phrase) speechFinalText += `${speechFinalText ? " " : ""}${phrase}`;
+        }
+        else interimText += result[0].transcript;
+      }
+      renderSpeechTranscript(interimText.trim());
+    };
+    speechRecognition.onerror = (event) => {
+      if (event.error === "aborted") return;
+      speechErrorMessage = event.error === "not-allowed" || event.error === "service-not-allowed"
+        ? "ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน"
+        : event.error === "audio-capture"
+          ? "ไม่พบไมโครโฟน"
+          : event.error === "no-speech"
+            ? "ไม่พบเสียงพูด ลองเริ่มใหม่อีกครั้ง"
+            : `ถอดเสียงไม่สำเร็จ (${event.error})`;
+      if (event.error !== "no-speech") speechListening = false;
+      updateSpeechControls(speechErrorMessage);
+      showToast(speechErrorMessage, "error");
+    };
+    speechRecognition.onend = () => {
+      if (!speechListening) return;
+      updateSpeechControls("กำลังฟังต่อ...");
+      window.setTimeout(() => {
+        if (!speechListening) return;
+        try {
+          speechRecognition.start();
+        } catch (err) {
+          speechListening = false;
+          const message = err instanceof Error ? err.message : String(err);
+          updateSpeechControls(`เริ่มฟังต่อไม่สำเร็จ: ${message}`);
+          showToast(`เริ่มถอดเสียงต่อไม่สำเร็จ: ${message}`, "error");
+        }
+      }, 250);
+    };
+  }
+
+  speechErrorMessage = "";
+  speechListening = true;
+  updateSpeechControls("กำลังฟัง... พูดอธิบายได้เลย");
+  try {
+    speechRecognition.start();
+  } catch (err) {
+    speechListening = false;
+    const message = err instanceof Error ? err.message : String(err);
+    updateSpeechControls(`เริ่มฟังไม่สำเร็จ: ${message}`);
+    showToast(`เริ่มถอดเสียงไม่สำเร็จ: ${message}`, "error");
+  }
+});
+document.getElementById("speechStopBtn").addEventListener("click", stopSpeechListening);
+document.getElementById("speechClearBtn").addEventListener("click", () => {
+  speechFinalText = "";
+  renderSpeechTranscript();
+});
 document.getElementById("fullscreenBtn").addEventListener("click", () => {
   document.body.classList.add("present-mode");
   if (document.documentElement.requestFullscreen) {
@@ -1297,6 +1450,7 @@ document.getElementById("closePollBtn").addEventListener("click", async () => {
   if (!latestPollData) return;
   const ok = await confirmDialog("ปิดโพลและบันทึกผลลง Google Sheet ใช่หรือไม่?");
   if (!ok) return;
+  stopSpeechListening();
   try { await updateDoc(pollRef(), { active: false }); }
   catch (err) { showToast("ปิดโพลไม่สำเร็จ: " + err.message, "error"); return; }
 
