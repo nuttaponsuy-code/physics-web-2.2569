@@ -758,9 +758,10 @@ tr { cursor: pointer; transition: background .15s; }
 
 
     <div class="gc" id="ss2" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">กรอกห้องเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(1)">← กลับ</button></div>
-      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">กรอกชั้น/ห้องตามรูปแบบในรายชื่อ เช่น ม.5/1</div>
-      <input type="text" class="fc" id="roomIn" maxlength="100" placeholder="เช่น ม.5/1" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="sec-title" style="margin:0;">เลือกห้องเรียน</div><button class="btn btn-g btn-sm" onclick="App.step(1)">← กลับ</button></div>
+      <div style="font-size:.82rem;color:var(--t3);margin-bottom:10px;">เลือกห้องจากรายชื่อที่ครูนำเข้าไว้ในระบบ</div>
+      <select class="fc" id="roomIn" style="margin-bottom:8px;" disabled><option value="">กำลังโหลดห้องเรียน...</option></select>
+      <div id="roomLoadStatus" style="font-size:.76rem;color:var(--t3);margin-bottom:14px;"></div>
       <button class="btn btn-p btn-lg" onclick="App.confirmRoom()">ถัดไป</button>
     </div>
 
@@ -1128,6 +1129,7 @@ const Res={
 let S={
   asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',studentId:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
   rosterSummary:{},
+  roomLoadId:0,
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
   rId:null,rName:'',_dbt:null,_cached:false,
@@ -1340,10 +1342,36 @@ var App={
     [1,2,3,4,5].forEach(i=>{UI.hide('ss'+i);const s=$(i>4?'st4':'st'+i);if(s)s.classList.remove('active');});
     UI.show('ss'+n);const s=$(n>4?'st4':'st'+n);if(s)s.classList.add('active');
   },
-  selSubj:sj=>{S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');if($('studentPrivacyConsent'))$('studentPrivacyConsent').checked=false;App.step(2);},
+  selSubj:async sj=>{
+    S.subj=sj;S.room='';S.stu='';S.studentId='';UI.sv('roomIn','');UI.sv('stuSel','');
+    if($('studentPrivacyConsent'))$('studentPrivacyConsent').checked=false;
+    App.step(2);
+    const requestId=++S.roomLoadId,select=$('roomIn'),status=$('roomLoadStatus');
+    select.disabled=true;select.innerHTML='<option value="">กำลังโหลดห้องเรียน...</option>';
+    if(status)status.textContent='';
+    try{
+      const result=await API.call('getRosterRooms',{subject:sj});
+      if(requestId!==S.roomLoadId)return;
+      if(result.error||!result.success||!Array.isArray(result.rooms))throw new Error(result.error||'โหลดรายชื่อห้องไม่สำเร็จ');
+      if(!result.rooms.length){
+        select.innerHTML='<option value="">ยังไม่มีห้องเรียนในระบบ</option>';
+        if(status)status.textContent='กรุณาแจ้งครูให้นำเข้ารายชื่อนักเรียนก่อน';
+        return;
+      }
+      select.innerHTML='<option value="">— เลือกห้องเรียน —</option>'+result.rooms.map(room=>'<option value="'+_esc(room)+'">'+_esc(room)+'</option>').join('');
+      select.disabled=false;
+      if(status)status.textContent='พบ '+result.rooms.length+' ห้องเรียน';
+    }catch(error){
+      if(requestId!==S.roomLoadId)return;
+      select.innerHTML='<option value="">โหลดห้องเรียนไม่สำเร็จ</option>';
+      if(status)status.textContent='โหลดห้องไม่สำเร็จ: '+error.message+' กรุณาลองเลือกวิชาอีกครั้งหรือติดต่อครู';
+      UI.toast('โหลดรายชื่อห้องไม่สำเร็จ: '+error.message,'er');
+    }
+  },
   confirmRoom:()=>{
     const room=UI.v('roomIn').trim();
-    if(!room)return UI.toast('กรุณากรอกชั้น/ห้องเรียน','wn');
+    if(!$('roomIn')||$('roomIn').disabled)return UI.toast('ยังโหลดรายชื่อห้องไม่สำเร็จ กรุณาลองใหม่อีกครั้ง','wn');
+    if(!room)return UI.toast('กรุณาเลือกห้องเรียน','wn');
     S.room=room;UI.sv('stuSel','');App.step(3);
   },
   confStu:async()=>{

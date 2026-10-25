@@ -35,11 +35,12 @@ function doPost(e) {
     }
   }
 
-  if (action === 'getAll' || action === 'getRoster' || action === 'verifyRosterStudent') {
+  if (action === 'getAll' || action === 'getRoster' || action === 'getRosterRooms' || action === 'verifyRosterStudent') {
     try {
       var readResult;
       if (action === 'getAll') readResult = handleGetAll();
       else if (action === 'getRoster') readResult = handleGetRoster(payload);
+      else if (action === 'getRosterRooms') readResult = handleGetRosterRooms(payload);
       else readResult = handleVerifyRosterStudent(payload);
       return respondJSON(readResult);
     } catch (err) {
@@ -285,6 +286,19 @@ function handleGetRoster(p) {
     roster[subject][room].push(studentId + '|' + name);
   }
   return { success: true, roster: roster };
+}
+
+function handleGetRosterRooms(p) {
+  var subject = String(p.subject || '').trim();
+  if (!subject) return { error: 'กรุณาเลือกรายวิชาก่อนโหลดห้องเรียน' };
+  var rows = getSheet('Roster').getDataRange().getValues();
+  var rooms = {};
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0] || '').trim() !== subject) continue;
+    var room = String(rows[i][1] || '').trim();
+    if (room) rooms[room] = true;
+  }
+  return { success: true, rooms: Object.keys(rooms).sort() };
 }
 
 function handleSaveRoster(p) {
