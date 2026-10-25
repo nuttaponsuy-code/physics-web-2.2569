@@ -1129,7 +1129,7 @@ const Res={
 /* STATE */
 let S={
   asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',studentId:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
-  rosterSummary:{},
+  rosterSummary:{}, resourcesSyncError:'',
   roomLoadId:0,studentLoadId:0,
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
@@ -1291,7 +1291,9 @@ var App={
       }
     } catch(e){}
     try{
-      const d=await API.call('getAll');
+      const responses=await Promise.all([API.call('getAll'),API.call('getLearningResources')]);
+      const d=responses[0];
+      const resourceData=responses[1];
       if(d._n){if(show||forceLoad)UI.toast('เซิร์ฟเวอร์ไม่ตอบ — ตรวจ Deploy และสิทธิ์ Sheet','er');if(forceLoad)UI.load(false);return;}
       if(d.error)throw new Error(d.error);
       try { localStorage.setItem('appDataCache', JSON.stringify(d)); } catch(e){}
@@ -1301,7 +1303,36 @@ var App={
       const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
       S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
       rebuildIdx();
-      if(show||forceLoad)UI.toast('อัปเดตข้อมูลล่าสุดแล้ว','ok');
+      if(resourceData&&resourceData.success&&resourceData.resources){
+        S.resourcesSyncError='';
+        try{
+          const migrationKey='learningResourcesMigratedToServer_v1';
+          if(localStorage.getItem(migrationKey)!=='true'){
+            const legacy=localStorage.getItem('custom_learning_resources');
+            if(legacy){
+              const oldResources=JSON.parse(legacy);
+              for(const subject of Object.keys(oldResources)){
+                if(Object.prototype.hasOwnProperty.call(resourceData.resources,subject)||!Array.isArray(oldResources[subject]))continue;
+                const list=oldResources[subject].map(r=>({title:r.title||r.s||'',url:r.url||'',desc:r.desc||r.d||''}));
+                const migrated=await API.call('saveLearningResources',{subject,resources:list});
+                if(!migrated||!migrated.success)throw new Error((migrated&&migrated.error)||'ย้ายคลังสื่อเดิมไม่สำเร็จ');
+                resourceData.resources[subject]=list;
+              }
+            }
+            localStorage.setItem(migrationKey,'true');
+          }
+        }catch(error){
+          S.resourcesSyncError='ย้ายคลังสื่อเดิมไม่สำเร็จ: '+error.message;
+          console.error('Learning resource migration failed',error);
+        }
+        const merged=Object.assign({},(window.APP_CONFIG&&window.APP_CONFIG.learningResources)||{},LR);
+        Object.keys(resourceData.resources).forEach(subject=>{merged[subject]=resourceData.resources[subject];});
+        LR=merged;
+      }else{
+        S.resourcesSyncError=(resourceData&&resourceData.error)||'ไม่สามารถโหลดคลังสื่อจากเซิร์ฟเวอร์ได้';
+        console.error('getLearningResources',S.resourcesSyncError);
+      }
+      if(show||forceLoad)UI.toast(S.resourcesSyncError?'อัปเดตข้อมูลแล้ว แต่โหลดคลังสื่อไม่สำเร็จ: '+S.resourcesSyncError:'อัปเดตข้อมูลล่าสุดแล้ว',S.resourcesSyncError?'wn':'ok');
       App.refresh();
     }catch(e){if(show||forceLoad)UI.toast('เชื่อมต่อล้มเหลว: '+e,'er');}
     if(forceLoad)UI.load(false);
@@ -2123,6 +2154,7 @@ var App={
   openManageResources: () => {
     const sjTitle = $('resSubjTitle');
     if (sjTitle) sjTitle.textContent = `วิชาที่เลือก: ${S.tab}`;
+    if(S.resourcesSyncError)UI.toast('คลังสื่อยังซิงก์ไม่สำเร็จ: '+S.resourcesSyncError,'er');
     App.renderResManage();
     App.togResForm(false);
     openM('mManageResources');
@@ -2178,60 +2210,57 @@ var App={
     if (form) form.style.display = 'block';
   },
 
-  saveResource: () => {
+  saveResource: async () => {
     const title = UI.v('resTitleIn').trim();
     const url = UI.v('resUrlIn').trim();
     const desc = UI.v('resDescIn').trim();
     const idx = parseInt(UI.v('resIdx'));
     if (!title || !url) return UI.toast('กรอกชื่อสื่อและลิงก์ URL ก่อนบันทึกครับ', 'wn');
-
-    if (!LR[S.tab]) LR[S.tab] = [];
-    if (idx >= 0 && idx < LR[S.tab].length) {
-      LR[S.tab][idx] = { title, url, desc };
-    } else {
-      LR[S.tab].push({ title, url, desc });
-    }
-
-    try {
-      localStorage.setItem('custom_learning_resources', JSON.stringify(LR));
-      UI.toast('บันทึกสื่อการเรียนรู้เรียบร้อยแล้ว', 'ok');
-      App.togResForm(false);
-      App.renderResManage();
-      App.refresh();
-      const f = $('toolsFrame');
-      if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'ttInit', subject: S.tab, theme: document.documentElement.getAttribute('data-theme') || 'dark', students: STUDENTS, learningResources: LR, formulas: FM, apiUrl: API_URL, photos: S.photos }, '*');
-    } catch (e) {
-      UI.toast('บันทึกไม่สำเร็จ: ' + e, 'er');
-    }
+    if (!/^https?:\/\//i.test(url)) return UI.toast('URL ต้องขึ้นต้นด้วย http:// หรือ https://', 'wn');
+    const list=(LR[S.tab]||[]).slice();
+    const resource={title,url,desc};
+    if (idx >= 0 && idx < list.length) list[idx]=resource;
+    else list.push(resource);
+    const result=await API.call('saveLearningResources',{subject:S.tab,resources:list});
+    if(!result||!result.success)return UI.toast((result&&result.error)||'บันทึกสื่อไม่สำเร็จ','er');
+    LR=Object.assign({},LR,{[S.tab]:list});
+    S.resourcesSyncError='';
+    try { localStorage.setItem('custom_learning_resources', JSON.stringify(LR)); } catch(e) { console.warn('Unable to cache learning resources',e); }
+    UI.toast('บันทึกสื่อการเรียนรู้เรียบร้อยแล้ว นักเรียนจะเห็นสื่อจากฐานข้อมูลกลาง','ok');
+    App.togResForm(false);
+    App.renderResManage();
+    App.refresh();
+    const f = $('toolsFrame');
+    if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'ttInit', subject: S.tab, theme: document.documentElement.getAttribute('data-theme') || 'dark', students: STUDENTS, learningResources: LR, formulas: FM, apiUrl: API_URL, photos: S.photos }, '*');
   },
 
-  delResource: (idx) => {
+  delResource: async (idx) => {
     if (!LR[S.tab] || !LR[S.tab][idx]) return;
     const name = LR[S.tab][idx].title || LR[S.tab][idx].s || 'สื่อนี้';
     if (!confirm(`คุณต้องการลบสื่อ "${name}" ใช่หรือไม่?`)) return;
-    LR[S.tab].splice(idx, 1);
-    try {
-      localStorage.setItem('custom_learning_resources', JSON.stringify(LR));
-      UI.toast('ลบสื่อเรียบร้อยแล้ว', 'ok');
-      App.renderResManage();
-      App.refresh();
-      const f = $('toolsFrame');
-      if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'ttInit', subject: S.tab, theme: document.documentElement.getAttribute('data-theme') || 'dark', students: STUDENTS, learningResources: LR, formulas: FM, apiUrl: API_URL, photos: S.photos }, '*');
-    } catch (e) {
-      UI.toast('ลบไม่สำเร็จ: ' + e, 'er');
-    }
+    const list=LR[S.tab].filter((_,i)=>i!==idx);
+    const result=await API.call('saveLearningResources',{subject:S.tab,resources:list});
+    if(!result||!result.success)return UI.toast((result&&result.error)||'ลบสื่อไม่สำเร็จ','er');
+    LR=Object.assign({},LR,{[S.tab]:list});
+    S.resourcesSyncError='';
+    try { localStorage.setItem('custom_learning_resources', JSON.stringify(LR)); } catch(e) { console.warn('Unable to cache learning resources',e); }
+    UI.toast('ลบสื่อเรียบร้อยแล้ว','ok');
+    App.renderResManage();
+    App.refresh();
+    const f = $('toolsFrame');
+    if (f && f.contentWindow) f.contentWindow.postMessage({ type: 'ttInit', subject: S.tab, theme: document.documentElement.getAttribute('data-theme') || 'dark', students: STUDENTS, learningResources: LR, formulas: FM, apiUrl: API_URL, photos: S.photos }, '*');
   },
 
-  resetResourcesDefault: () => {
-    try {
-      localStorage.removeItem('custom_learning_resources');
-      LR = (window.APP_CONFIG && window.APP_CONFIG.learningResources) ? window.APP_CONFIG.learningResources : {};
-      UI.toast('คืนค่าสื่อเริ่มต้นจาก app-config.js เรียบร้อยแล้ว', 'ok');
-      App.renderResManage();
-      App.refresh();
-    } catch (e) {
-      UI.toast('คืนค่าไม่สำเร็จ', 'er');
-    }
+  resetResourcesDefault: async () => {
+    const defaults=(window.APP_CONFIG&&window.APP_CONFIG.learningResources)||{};
+    const list=(defaults[S.tab]||[]).map(r=>({title:r.title||r.s||'',url:r.url||'',desc:r.desc||r.d||''}));
+    const result=await API.call('saveLearningResources',{subject:S.tab,resources:list});
+    if(!result||!result.success)return UI.toast((result&&result.error)||'คืนค่าไม่สำเร็จ','er');
+    LR=Object.assign({},LR,{[S.tab]:list});
+    try { localStorage.setItem('custom_learning_resources', JSON.stringify(LR)); } catch(e) { console.warn('Unable to cache learning resources',e); }
+    UI.toast('คืนค่าสื่อเริ่มต้นของวิชานี้เรียบร้อยแล้ว','ok');
+    App.renderResManage();
+    App.refresh();
   },
 
   /* ==================== UNLOCK PRIVATE SCORES ==================== */
