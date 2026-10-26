@@ -1129,7 +1129,7 @@ const Res={
 /* STATE */
 let S={
   asns:[],subs:[],grds:[],exams:[],subj:'',room:'',stu:'',studentId:'',asn:'',asnId:'',tab:'ฟิสิกส์ 3',
-  rosterSummary:{}, resourcesSyncError:'',
+  rosterSummary:{}, rosterSyncError:'', resourcesSyncError:'',
   roomLoadId:0,studentLoadId:0,
   siMap:new Map(),giMap:new Map(),exMap:new Map(),
   scaMap:new Map(),scuMap:new Map(),scoreMap:new Map(),
@@ -1249,6 +1249,25 @@ function teacherRosterForSubject(subject) {
   return Object.fromEntries(Object.entries(roster).map(([room,students])=>[room,Array.from(students)]));
 }
 
+async function fetchRosterForTeacher() {
+  const subjects=CFG.subjects||[];
+  const entries=await Promise.all(subjects.map(async subject=>{
+    const roomResult=await API.call('getRosterRooms',{subject});
+    if(!roomResult||!roomResult.success||!Array.isArray(roomResult.rooms)){
+      throw new Error(roomResult&&roomResult.error||'โหลดห้องเรียนของ '+subject+' ไม่สำเร็จ');
+    }
+    const rooms=await Promise.all(roomResult.rooms.map(async room=>{
+      const studentResult=await API.call('getRosterStudents',{subject,room});
+      if(!studentResult||!studentResult.success||!Array.isArray(studentResult.students)){
+        throw new Error(studentResult&&studentResult.error||'โหลดรายชื่อห้อง '+room+' ไม่สำเร็จ');
+      }
+      return [room,studentResult.students];
+    }));
+    return [subject,Object.fromEntries(rooms)];
+  }));
+  return Object.fromEntries(entries);
+}
+
 
 function isLate(subTime, dueStr) {
   if(!subTime || !dueStr) return false;
@@ -1291,9 +1310,14 @@ var App={
       }
     } catch(e){}
     try{
-      const responses=await Promise.all([API.call('getAll'),API.call('getLearningResources')]);
+      const responses=await Promise.all([
+        API.call('getAll'),
+        API.call('getLearningResources'),
+        fetchRosterForTeacher().then(roster=>({success:true,roster})).catch(error=>({error:error.message}))
+      ]);
       const d=responses[0];
       const resourceData=responses[1];
+      const rosterData=responses[2];
       if(d._n){if(show||forceLoad)UI.toast('เซิร์ฟเวอร์ไม่ตอบ — ตรวจ Deploy และสิทธิ์ Sheet','er');if(forceLoad)UI.load(false);return;}
       if(d.error)throw new Error(d.error);
       try { localStorage.setItem('appDataCache', JSON.stringify(d)); } catch(e){}
@@ -1303,6 +1327,14 @@ var App={
       const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
       S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
       rebuildIdx();
+      if(rosterData&&rosterData.success&&rosterData.roster){
+        STUDENTS=rosterData.roster;
+        cacheRosterLocally(STUDENTS);
+        S.rosterSyncError='';
+      }else{
+        S.rosterSyncError=(rosterData&&rosterData.error)||'ไม่สามารถโหลดรายชื่อจาก Google Sheet ได้';
+        console.error('Teacher roster refresh failed',S.rosterSyncError);
+      }
       if(resourceData&&resourceData.success&&resourceData.resources){
         S.resourcesSyncError='';
         try{
@@ -1332,7 +1364,10 @@ var App={
         S.resourcesSyncError=(resourceData&&resourceData.error)||'ไม่สามารถโหลดคลังสื่อจากเซิร์ฟเวอร์ได้';
         console.error('getLearningResources',S.resourcesSyncError);
       }
-      if(show||forceLoad)UI.toast(S.resourcesSyncError?'อัปเดตข้อมูลแล้ว แต่โหลดคลังสื่อไม่สำเร็จ: '+S.resourcesSyncError:'อัปเดตข้อมูลล่าสุดแล้ว',S.resourcesSyncError?'wn':'ok');
+      if(show||forceLoad){
+        const syncErrors=[S.rosterSyncError,S.resourcesSyncError].filter(Boolean);
+        UI.toast(syncErrors.length?'อัปเดตข้อมูลแล้ว แต่'+syncErrors.join(' และ '):'อัปเดตข้อมูลล่าสุดแล้ว',syncErrors.length?'wn':'ok');
+      }
       App.refresh();
     }catch(e){if(show||forceLoad)UI.toast('เชื่อมต่อล้มเหลว: '+e,'er');}
     if(forceLoad)UI.load(false);
