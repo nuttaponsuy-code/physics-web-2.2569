@@ -335,13 +335,6 @@
   .discussion-status{font-weight:700;color:#c7d2fe;}
   .discussion-status.recording{color:#fecaca;}
   .discussion-status.recording::before{content:'● ';color:#fb7185;animation:pulse 1s infinite;}
-  .discussion-password{margin-left:auto;min-width:min(280px,100%);}
-  .discussion-password label{display:block;font-size:12px;color:#c7d2fe;margin-bottom:5px;}
-  .discussion-password input{
-    width:100%;padding:10px 12px;border:1px solid #6366f1;border-radius:10px;
-    color:#fff;background:#1e1b4b;font:inherit;
-  }
-  .discussion-password input::placeholder{color:#a5b4fc;}
   .discussion-transcript{
     flex:1;min-height:48vh;width:100%;resize:vertical;padding:clamp(20px,4vw,44px);
     border:2px solid #818cf8;border-radius:18px;background:#fff;color:#111827;
@@ -624,16 +617,12 @@
       </div>
       <div class="discussion-toolbar">
         <button class="btn btn-primary" id="discussionRecordBtn" type="button">🎙️ เริ่มพูด</button>
-        <button class="btn btn-danger" id="discussionStopBtn" type="button" disabled>⏹ หยุดและถอดเสียง</button>
+        <button class="btn btn-danger" id="discussionStopBtn" type="button" disabled>⏹ หยุดฟัง</button>
         <button class="btn btn-secondary" id="discussionClearBtn" type="button">ล้างข้อความ</button>
-        <span class="discussion-status" id="discussionStatus" role="status">พร้อมเริ่ม — พูดได้ครั้งละไม่เกิน 45 วินาที</span>
-        <div class="discussion-password">
-          <label for="discussionPassword">รหัสผ่านครูสำหรับใช้บริการถอดเสียง</label>
-          <input id="discussionPassword" type="password" autocomplete="current-password" placeholder="รหัส AI_TEACHER_PASSWORD">
-        </div>
+        <span class="discussion-status" id="discussionStatus" role="status">พร้อมเริ่ม — กดปุ่มแล้วพูดได้เลย</span>
       </div>
       <textarea class="discussion-transcript" id="discussionTranscript" aria-label="ข้อความอภิปรายที่ถอดเสียงและแก้ไขได้" placeholder="ข้อความที่ครูพูดจะปรากฏตรงนี้ แก้ไขคำที่ถอดผิดได้ก่อนใช้สอน"></textarea>
-      <div class="discussion-note">ระบบจะส่งเสียงไปถอดเป็นข้อความผ่าน Google Gemini โดยใช้ API key ที่เก็บใน Apps Script เท่านั้น ไม่บันทึกไฟล์เสียง หลังถอดเสียงสามารถแตะข้อความเพื่อแก้ไขได้ — ใช้ผ่าน HTTPS และอนุญาตไมโครโฟน</div>
+      <div class="discussion-note">ถอดเสียงสดด้วยบริการรู้จำเสียงของเบราว์เซอร์ ไม่ใช้ API key หรือ Apps Script ข้อความอาจคลาดเคลื่อน โดยเฉพาะศัพท์เฉพาะและสมการ โปรดตรวจแก้ก่อนสอน — ต้องใช้อินเทอร์เน็ตและอนุญาตไมโครโฟน หากเบราว์เซอร์ไม่รองรับ ให้แตะช่องข้อความแล้วใช้ปุ่มไมโครโฟนบนแป้นพิมพ์ iPad (Dictation)</div>
     </div>
   </div>
 
@@ -750,12 +739,10 @@ let speechRecognition = null;
 let speechListening = false;
 let speechFinalText = "";
 let speechErrorMessage = "";
-let discussionRecorder = null;
-let discussionStream = null;
-let discussionChunks = [];
-let discussionRecordingTimer = null;
-let discussionDiscardRecording = false;
-let discussionTranscribing = false;
+let discussionRecognition = null;
+let discussionListening = false;
+let discussionTranscriptFinal = "";
+let discussionRestartTimer = null;
 let discussionReturnView = "setup";
 
 function renderSpeechTranscript(interimText = "") {
@@ -790,116 +777,102 @@ function setDiscussionStatus(message, state = "") {
   status.classList.toggle("recording", state === "recording");
 }
 
-function finishDiscussionRecording(discard) {
-  if (discussionRecordingTimer) {
-    clearTimeout(discussionRecordingTimer);
-    discussionRecordingTimer = null;
-  }
-  if (!discussionRecorder || discussionRecorder.state === "inactive") return;
-  discussionDiscardRecording = !!discard;
-  discussionRecorder.stop();
+function updateDiscussionTranscript(interimText = "") {
+  const transcript = document.getElementById("discussionTranscript");
+  transcript.value = `${discussionTranscriptFinal}${interimText ? `${discussionTranscriptFinal ? " " : ""}${interimText}` : ""}`;
+  transcript.scrollTop = transcript.scrollHeight;
 }
 
-async function transcribeDiscussionAudio(blob) {
-  if (blob.size > 4 * 1024 * 1024) {
-    setDiscussionStatus("ไฟล์เสียงใหญ่เกินไป กรุณาพูดสั้นลงแล้วลองใหม่");
-    showToast("ไฟล์เสียงใหญ่เกินไป กรุณาพูดครั้งละไม่เกิน 45 วินาที", "error");
+function setDiscussionListening(isListening) {
+  discussionListening = isListening;
+  document.getElementById("discussionRecordBtn").disabled = isListening;
+  document.getElementById("discussionStopBtn").disabled = !isListening;
+}
+
+function startDiscussionRecognition() {
+  if (!discussionListening) return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setDiscussionListening(false);
+    setDiscussionStatus("เบราว์เซอร์นี้ไม่รองรับการรู้จำเสียง กรุณาอัปเดต Safari/iPadOS หรือใช้เบราว์เซอร์ที่รองรับ");
     return;
   }
 
-  discussionTranscribing = true;
-  document.getElementById("discussionRecordBtn").disabled = true;
-  document.getElementById("discussionStopBtn").disabled = true;
-  setDiscussionStatus("กำลังถอดเสียง... กรุณารอสักครู่");
-  try {
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error("อ่านไฟล์เสียงไม่สำเร็จ"));
-      reader.readAsDataURL(blob);
-    });
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "transcribeTeacherAudio",
-        payload: {
-          teacherPassword: document.getElementById("discussionPassword").value,
-          audioMimeType: blob.type || "audio/webm",
-          audioData: String(dataUrl).split(",")[1] || ""
-        }
-      })
-    });
-    const result = await response.json();
-    if (!response.ok || result.error || !result.success || !result.transcript) {
-      throw new Error(result.error || "ถอดเสียงไม่สำเร็จ กรุณาลองใหม่");
+  const recognition = new SpeechRecognition();
+  discussionRecognition = recognition;
+  recognition.lang = "th-TH";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onresult = event => {
+    let interimText = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      const text = result[0].transcript.trim();
+      if (!text) continue;
+      if (result.isFinal) {
+        discussionTranscriptFinal += `${discussionTranscriptFinal ? " " : ""}${text}`;
+      } else {
+        interimText += `${interimText ? " " : ""}${text}`;
+      }
     }
-
-    const transcript = document.getElementById("discussionTranscript");
-    const existingText = transcript.value.trimEnd();
-    transcript.value = `${existingText ? existingText + "\n" : ""}${result.transcript.trim()}`;
-    transcript.scrollTop = transcript.scrollHeight;
-    setDiscussionStatus("ถอดเสียงแล้ว — ตรวจทานหรือแก้ไขข้อความได้");
+    updateDiscussionTranscript(interimText);
+  };
+  recognition.onerror = event => {
+    if (event.error === "aborted") return;
+    if (event.error === "no-speech") {
+      setDiscussionStatus("ยังไม่ได้ยินเสียงพูด — กำลังฟังต่อ...", "recording");
+      return;
+    }
+    const messages = {
+      "not-allowed": "ยังไม่ได้อนุญาตให้ใช้ไมโครโฟน กรุณาเปิดสิทธิ์ให้เว็บไซต์นี้ใน Settings",
+      "service-not-allowed": "บริการรู้จำเสียงถูกปิดใช้งานบนอุปกรณ์นี้",
+      "audio-capture": "ไม่พบไมโครโฟน",
+      network: "การรู้จำเสียงต้องใช้อินเทอร์เน็ต กรุณาตรวจสอบเครือข่ายแล้วเริ่มใหม่"
+    };
+    setDiscussionListening(false);
+    setDiscussionStatus(messages[event.error] || `รู้จำเสียงไม่สำเร็จ (${event.error})`);
+  };
+  recognition.onend = () => {
+    if (discussionRecognition !== recognition || !discussionListening) return;
+    setDiscussionStatus("กำลังฟัง... พูดอธิบายได้เลย", "recording");
+    discussionRestartTimer = window.setTimeout(startDiscussionRecognition, 250);
+  };
+  try {
+    recognition.start();
   } catch (err) {
+    setDiscussionListening(false);
     const message = err instanceof Error ? err.message : String(err);
-    setDiscussionStatus(message);
-    showToast("ถอดเสียงไม่สำเร็จ: " + message, "error");
-  } finally {
-    discussionTranscribing = false;
-    document.getElementById("discussionRecordBtn").disabled = false;
+    setDiscussionStatus(`เริ่มรู้จำเสียงไม่สำเร็จ: ${message}`);
   }
 }
 
-async function startDiscussionRecording() {
-  if (discussionTranscribing) return;
-  const password = document.getElementById("discussionPassword").value.trim();
-  if (!password) {
-    setDiscussionStatus("กรุณากรอกรหัส AI_TEACHER_PASSWORD ก่อนเริ่มถอดเสียง");
-    document.getElementById("discussionPassword").focus();
+function startDiscussionRecording() {
+  if (discussionListening) return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setDiscussionStatus("เบราว์เซอร์นี้ไม่รองรับการรู้จำเสียง กรุณาอัปเดต Safari/iPadOS หรือใช้เบราว์เซอร์ที่รองรับ");
     return;
   }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
-    setDiscussionStatus("เบราว์เซอร์นี้บันทึกเสียงไม่ได้ กรุณาใช้ Safari รุ่นล่าสุดผ่าน HTTPS");
-    return;
-  }
+  discussionTranscriptFinal = document.getElementById("discussionTranscript").value.trim();
+  if (discussionTranscriptFinal) discussionTranscriptFinal += " ";
+  setDiscussionListening(true);
+  setDiscussionStatus("กำลังฟัง... พูดอธิบายได้เลย", "recording");
+  startDiscussionRecognition();
+}
 
-  try {
-    discussionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mimeType = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]
-      .find(type => MediaRecorder.isTypeSupported(type));
-    discussionRecorder = mimeType
-      ? new MediaRecorder(discussionStream, { mimeType })
-      : new MediaRecorder(discussionStream);
-    discussionChunks = [];
-    discussionDiscardRecording = false;
-    discussionRecorder.ondataavailable = event => {
-      if (event.data && event.data.size) discussionChunks.push(event.data);
-    };
-    discussionRecorder.onerror = event => {
-      setDiscussionStatus("บันทึกเสียงไม่สำเร็จ: " + (event.error?.message || "เกิดข้อผิดพลาด"));
-    };
-    discussionRecorder.onstop = () => {
-      const blob = new Blob(discussionChunks, { type: discussionRecorder.mimeType || "audio/webm" });
-      discussionChunks = [];
-      if (discussionStream) discussionStream.getTracks().forEach(track => track.stop());
-      discussionStream = null;
-      document.getElementById("discussionRecordBtn").disabled = false;
-      document.getElementById("discussionStopBtn").disabled = true;
-      if (!discussionDiscardRecording && blob.size) transcribeDiscussionAudio(blob);
-      else if (discussionDiscardRecording) setDiscussionStatus("ยกเลิกการบันทึกแล้ว");
-      else setDiscussionStatus("ไม่มีเสียงที่บันทึกได้ กรุณาลองใหม่");
-    };
-    discussionRecorder.start();
-    document.getElementById("discussionRecordBtn").disabled = true;
-    document.getElementById("discussionStopBtn").disabled = false;
-    setDiscussionStatus("กำลังบันทึก — พูดอธิบายได้เลย (สูงสุด 45 วินาที)", "recording");
-    discussionRecordingTimer = setTimeout(() => finishDiscussionRecording(false), 45000);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    setDiscussionStatus(message.includes("Permission") || message.includes("NotAllowed")
-      ? "ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาเปิดสิทธิ์ใน Settings"
-      : "เปิดไมโครโฟนไม่สำเร็จ: " + message);
+function finishDiscussionRecording() {
+  discussionListening = false;
+  if (discussionRestartTimer) {
+    clearTimeout(discussionRestartTimer);
+    discussionRestartTimer = null;
   }
+  if (discussionRecognition) {
+    const recognition = discussionRecognition;
+    discussionRecognition = null;
+    recognition.stop();
+  }
+  setDiscussionListening(false);
+  setDiscussionStatus("หยุดฟังแล้ว — ตรวจแก้ข้อความได้");
 }
 
 function openDiscussionMode() {
@@ -911,7 +884,7 @@ function openDiscussionMode() {
 }
 
 function closeDiscussionMode() {
-  finishDiscussionRecording(true);
+  if (discussionListening) finishDiscussionRecording();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   document.body.classList.remove("discussion-mode");
   document.getElementById("discussionView").style.display = "none";
@@ -1548,8 +1521,9 @@ updateTimerDisplay();
 document.getElementById("openDiscussionModeBtn").addEventListener("click", openDiscussionMode);
 document.getElementById("closeDiscussionModeBtn").addEventListener("click", closeDiscussionMode);
 document.getElementById("discussionRecordBtn").addEventListener("click", startDiscussionRecording);
-document.getElementById("discussionStopBtn").addEventListener("click", () => finishDiscussionRecording(false));
+document.getElementById("discussionStopBtn").addEventListener("click", finishDiscussionRecording);
 document.getElementById("discussionClearBtn").addEventListener("click", () => {
+  discussionTranscriptFinal = "";
   document.getElementById("discussionTranscript").value = "";
   setDiscussionStatus("ข้อความถูกล้างแล้ว");
 });
