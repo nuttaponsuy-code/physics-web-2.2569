@@ -1,4 +1,10 @@
-import { APP_CONFIG } from './app-config.js';
+import './app-config.js';
+
+const APP_CONFIG = window.APP_CONFIG;
+
+if (!APP_CONFIG) {
+  throw new Error('ไม่พบ APP_CONFIG ใน app-config.js');
+}
 
 // Firebase credentials
 export const firebaseConfig = APP_CONFIG.firebase;
