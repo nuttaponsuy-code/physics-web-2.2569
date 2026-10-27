@@ -61,6 +61,14 @@ select.fc { appearance: none; background-image: url('data:image/svg+xml;utf8,<sv
 .timer-d { font-size: 3.5rem; font-weight: 700; color: var(--t1); text-align: center; font-variant-numeric: tabular-nums; line-height: 1; margin: 20px 0; letter-spacing: -0.02em; }
 .noise-lv { height: 24px; background: var(--in-b); border-radius: 12px; overflow: hidden; border: 1px solid var(--gb); margin-top: 10px; }
 .noise-b { height: 100%; width: 0%; transition: width .1s, background .2s; }
+.noise-panel { padding: 14px; border: 1px solid var(--gb); border-radius: 14px; background: var(--g1); }
+.noise-chart { display: block; width: 100%; height: 170px; margin-top: 12px; border-radius: 10px; background: var(--in-b); }
+.noise-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.noise-quest { margin-top: 12px; padding: 12px; border: 1px solid var(--cy-d); border-radius: 12px; background: var(--cy-d); }
+.noise-quest-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: .82rem; font-weight: 700; }
+.noise-quest-track { height: 10px; overflow: hidden; margin-top: 8px; border-radius: 99px; background: var(--in-b); }
+.noise-quest-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ac), var(--ok)); transition: width .2s; }
+.noise-hint { color: var(--t3); font-size: .72rem; line-height: 1.5; margin-top: 8px; }
 #randDisp { text-align: center; font-size: 1.4rem; font-weight: 700; color: var(--cy); padding: 20px; margin: 10px 0; background: var(--in-b); border-radius: 12px; border: 1px dashed var(--cy); min-height: 80px; display: flex; align-items: center; justify-content: center; }
 .fm-grid { display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
 .fm-item { padding: 10px; background: var(--g1); border: 1px solid var(--gb); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -157,7 +165,8 @@ function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 var S={
   ready:false, tab:'', students:{}, formulas:{}, apiUrl:'', photos:[],
   tmrIv:null,tmrOn:false,tmrSec:0,tmrInit:false,tmrDown:true,tmrFS:false,wakeLock:null,
-  noStream:null,noAnim:null,randIv:null,poll:{y:0,m:0,n:0},
+  noStream:null,noAnim:null,noiseAudioContext:null,noiseAnalyser:null,noiseLevel:0,noiseStarting:false,
+  noiseChallengeActive:false,noiseQuietMs:0,noiseLastFrame:0,randIv:null,poll:{y:0,m:0,n:0},
   msgIv:null,msgCache:[],moodIv:null,pendingPhotoTarget:null
 };
 
@@ -237,7 +246,7 @@ var App={
         return '<div class="fm-item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><span class="fm-sym">'+title+'</span><span style="font-size:.74rem;color:var(--t3);display:block;">'+desc+'</span></div>'+(url?'<a href="'+url+'" target="_blank" class="btn btn-p btn-sm" style="text-decoration:none;flex-shrink:0;">เปิดดู 🔗</a>':'')+'</div>';
       }).join('')+'</div>';
     }else if(t==='noise'){
-      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">วัดระดับเสียงห้องเรียน</div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><div style="text-align:center;font-size:1.4rem;font-weight:700;color:var(--cy);margin:8px 0;" id="noiseLbl">-- %</div><div id="noiseSt" style="text-align:center;font-size:.78rem;color:var(--t3);margin-bottom:10px;">กด เริ่มวัด เพื่อเปิดไมโครโฟน</div><div style="display:flex;gap:9px;"><button class="btn btn-ok" style="flex:1;" onclick="App.startNoise()">เริ่มวัด</button><button class="btn btn-d" style="flex:1;" onclick="App.stopNoise()">หยุด</button></div>';
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">🔊 ห้องเรียนเสียงพอดี เรียนรู้ได้เต็มที่</div><div class="noise-panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><div style="font-size:.76rem;color:var(--t3);">ระดับเสียงสัมพัทธ์</div><div id="noiseLbl" style="font-size:1.7rem;font-weight:700;color:var(--cy);">--%</div></div><div id="noiseSt" style="font-size:.82rem;font-weight:700;color:var(--t2);text-align:right;">กดเริ่มวัดเพื่อดูกราฟเสียง</div></div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><canvas id="noiseChart" class="noise-chart" role="img" aria-label="กราฟความถี่เสียงรอบตัว"></canvas><div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t3);"><span>เสียงต่ำ</span><span>ความถี่ (Hz)</span><span>เสียงสูง</span></div><div class="noise-quest"><div class="noise-quest-head"><span id="noiseQuestText">ภารกิจสงบใจ: รักษาเสียงเบา 30 วินาที</span><span id="noiseQuestTime">0 / 30 วิ</span></div><div class="noise-quest-track"><div id="noiseQuestFill" class="noise-quest-fill"></div></div><div id="noiseQuestHint" class="noise-hint">ช่วยกันทำงานเบาๆ ฟังเสียงรอบห้อง แล้วสะสมดาวให้ครบ ⭐</div></div><div class="noise-actions"><button class="btn btn-ok" onclick="App.startNoise()">เริ่มวัด</button><button class="btn btn-p" onclick="App.startNoiseChallenge()">เริ่มภารกิจ ⭐</button><button class="btn btn-g" onclick="App.resetNoiseChallenge()">เริ่มภารกิจใหม่</button><button class="btn btn-d" onclick="App.stopNoise()">หยุดไมโครโฟน</button></div><div class="noise-hint">กราฟแสดงย่านความถี่เสียงจากไมโครโฟน ไม่ใช่เครื่องวัดเดซิเบลมาตรฐาน ค่าที่เห็นใช้เปรียบเทียบระดับเสียงในห้องนี้เท่านั้น</div></div>';
     }else if(t==='group'){
       if(!rooms.length){
         p.innerHTML='<div class="lbl">ยังไม่พบรายชื่อนักเรียนในวิชานี้ กรุณากลับไปหน้าเว็บครูแล้วกดรีเฟรชข้อมูล</div>';
@@ -364,22 +373,135 @@ var App={
   tmrPause:()=>{clearInterval(S.tmrIv);S.tmrOn=false;App.releaseWakeLock();},
   tmrReset:()=>{clearInterval(S.tmrIv);S.tmrOn=false;S.tmrInit=false;App.releaseWakeLock();const m=parseInt(UI.v('tmrIn'))||5;const el=$('tmrDisp');if(el)el.textContent=`${m}:00`;const fel=$('tmrFSNum');if(fel)fel.textContent=`${m}:00`;S.tmrSec=0;},
   startNoise:async()=>{
+    if(S.noStream&&S.noiseAnalyser)return true;
+    if(S.noiseStarting)return false;
+    S.noiseStarting=true;
+    let stream;
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true});S.noStream=stream;
-      const ctx=new(window.AudioContext||window.webkitAudioContext)();
-      const src=ctx.createMediaStreamSource(stream),ana=ctx.createAnalyser();ana.fftSize=256;src.connect(ana);
-      const data=new Uint8Array(ana.frequencyBinCount);
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('เบราว์เซอร์นี้ไม่รองรับการใช้ไมโครโฟน');
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      S.noStream=stream;
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if(!AudioContextClass)throw new Error('เบราว์เซอร์นี้ไม่รองรับการวิเคราะห์เสียง');
+      const ctx=new AudioContextClass();
+      S.noiseAudioContext=ctx;
+      await ctx.resume();
+      const src=ctx.createMediaStreamSource(stream),ana=ctx.createAnalyser();
+      ana.fftSize=2048;ana.smoothingTimeConstant=.78;src.connect(ana);
+      S.noiseAnalyser=ana;S.noiseLevel=0;
+      S.noiseLastFrame=performance.now();
+      const spectrum=new Uint8Array(ana.frequencyBinCount);
+      const waveform=new Uint8Array(ana.fftSize);
       const tick=()=>{
-        ana.getByteFrequencyData(data);const avg=data.reduce((a,b)=>a+b,0)/data.length,pct=Math.min(100,avg/128*100);
+        if(S.noiseAnalyser!==ana)return;
+        const now=performance.now(),dt=Math.min(100,Math.max(0,now-S.noiseLastFrame));
+        S.noiseLastFrame=now;
+        ana.getByteFrequencyData(spectrum);
+        ana.getByteTimeDomainData(waveform);
+        let energy=0;
+        for(let i=0;i<waveform.length;i++){const value=(waveform[i]-128)/128;energy+=value*value;}
+        const rms=Math.sqrt(energy/waveform.length);
+        S.noiseLevel=S.noiseLevel*.78+Math.min(100,rms*400)*.22;
+        const pct=Math.round(S.noiseLevel),quietLimit=24;
         const bar=$('noiseB'),lbl=$('noiseLbl'),st=$('noiseSt');
-        if(bar){bar.style.width=pct+'%';bar.style.background=pct>70?'var(--er)':pct>40?'var(--wn)':'var(--ok)';}
-        if(lbl)lbl.textContent=Math.round(pct)+' %';
-        if(st)st.textContent=pct>70?'[สูง] เสียงดังมาก!':pct>40?'[กลาง] เสียงปานกลาง':'[ต่ำ] เงียบดี';
+        const color=pct>55?'var(--er)':pct>quietLimit?'var(--wn)':'var(--ok)';
+        if(bar){bar.style.width=pct+'%';bar.style.background=color;}
+        if(lbl){lbl.textContent=pct+'%';lbl.style.color=color;}
+        if(st){
+          st.textContent=pct>55?'เสียงดัง ลองลดเสียงลงอีกนิดนะ':pct>quietLimit?'เสียงปานกลาง ค่อยๆ ทำกิจกรรมกัน':'เยี่ยมเลย ห้องเรียนกำลังสงบ';
+          st.style.color=color;
+        }
+        App.drawNoiseSpectrum(spectrum,ctx.sampleRate);
+        if(S.noiseChallengeActive){
+          if(pct<=quietLimit)S.noiseQuietMs+=dt;
+          else S.noiseQuietMs=0;
+          const seconds=Math.min(30,Math.floor(S.noiseQuietMs/1000));
+          const fill=$('noiseQuestFill'),time=$('noiseQuestTime'),hint=$('noiseQuestHint'),quest=$('noiseQuestText');
+          if(fill)fill.style.width=(seconds/30*100)+'%';
+          if(time)time.textContent=seconds+' / 30 วิ';
+          if(hint)hint.textContent=pct<=quietLimit?'ดีมาก! ช่วยกันรักษาความสงบต่ออีกนิดนะ ⭐':'มีเสียงดังขึ้น ไม่เป็นไร ลองตั้งใจฟังและเริ่มสะสมใหม่ได้';
+          if(seconds>=30){
+            S.noiseChallengeActive=false;
+            if(quest)quest.textContent='ภารกิจสำเร็จ! ห้องนี้ร่วมมือกันได้ยอดเยี่ยม 🎉';
+            if(hint)hint.textContent='ได้รับดาวความร่วมมือ ⭐⭐⭐ ขอบคุณที่ช่วยกันสร้างบรรยากาศการเรียนรู้';
+            UI.toast('ภารกิจห้องเรียนสงบสำเร็จ! เก่งมากทุกคน 🎉','ok');
+          }
+        }
         S.noAnim=requestAnimationFrame(tick);
-      };tick();
-    }catch(e){UI.toast('ไม่สามารถเข้าถึงไมโครโฟน (เบราว์เซอร์อาจบล็อกสิทธิ์ในกรอบ iframe)','er');}
+      };
+      S.noAnim=requestAnimationFrame(tick);
+      return true;
+    }catch(e){
+      if(stream)stream.getTracks().forEach(track=>track.stop());
+      if(S.noiseAudioContext){S.noiseAudioContext.close().catch(error=>console.warn('Unable to close audio context',error));}
+      S.noStream=null;S.noiseAnalyser=null;S.noiseAudioContext=null;
+      console.error('Noise monitor could not start',e);
+      UI.toast('เริ่มวัดเสียงไม่ได้: '+e.message,'er');
+      return false;
+    }finally{
+      S.noiseStarting=false;
+    }
   },
-  stopNoise:()=>{if(S.noAnim)cancelAnimationFrame(S.noAnim);if(S.noStream)S.noStream.getTracks().forEach(t=>t.stop());S.noStream=null;S.noAnim=null;},
+  drawNoiseSpectrum:(spectrum,sampleRate)=>{
+    const canvas=$('noiseChart');if(!canvas)return;
+    const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
+    const ratio=window.devicePixelRatio||1;
+    const width=Math.round(rect.width*ratio),height=Math.round(rect.height*ratio);
+    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+    const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);
+    const w=rect.width,h=rect.height;
+    const style=getComputedStyle(document.documentElement);
+    const grid=style.getPropertyValue('--in-bd').trim()||'rgba(255,255,255,.2)';
+    const text=style.getPropertyValue('--t3').trim()||'#999';
+    const colors=['#30d158','#64d2ff','#0a84ff','#ff9f0a'];
+    ctx.clearRect(0,0,w,h);
+    const left=34,right=8,top=10,bottom=25,chartW=w-left-right,chartH=h-top-bottom;
+    ctx.font='10px sans-serif';ctx.lineWidth=1;
+    [0,.5,1].forEach(level=>{
+      const y=top+chartH*(1-level);
+      ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();
+    });
+    const minHz=60,maxHz=Math.min(8000,sampleRate/2);
+    const barCount=Math.max(24,Math.floor(chartW/7));
+    const nyquist=sampleRate/2,binHz=sampleRate/(spectrum.length*2);
+    const barGap=2,barWidth=Math.max(2,(chartW-(barCount-1)*barGap)/barCount);
+    for(let i=0;i<barCount;i++){
+      const f0=minHz*Math.pow(maxHz/minHz,i/barCount);
+      const f1=minHz*Math.pow(maxHz/minHz,(i+1)/barCount);
+      const start=Math.max(0,Math.floor(f0/binHz)),end=Math.min(spectrum.length-1,Math.max(start,Math.ceil(f1/binHz)));
+      let peak=0;for(let bin=start;bin<=end;bin++)peak=Math.max(peak,spectrum[bin]);
+      const magnitude=Math.pow(peak/255,.7);
+      const barH=Math.max(2,magnitude*chartH);
+      ctx.fillStyle=colors[Math.min(colors.length-1,Math.floor(i/barCount*colors.length))];
+      ctx.globalAlpha=.55+magnitude*.45;
+      ctx.fillRect(left+i*(barWidth+barGap),top+chartH-barH,barWidth,barH);
+    }
+    ctx.globalAlpha=1;ctx.fillStyle=text;ctx.textAlign='center';
+    [100,500,1000,4000].filter(f=>f<nyquist&&f<=maxHz).forEach(f=>{
+      const x=left+Math.log(f/minHz)/Math.log(maxHz/minHz)*chartW;
+      ctx.fillText(f>=1000?(f/1000)+'k':String(f),x,h-7);
+    });
+  },
+  startNoiseChallenge:async()=>{
+    const started=await App.startNoise();if(!started)return;
+    S.noiseChallengeActive=true;S.noiseQuietMs=0;S.noiseLastFrame=performance.now();
+    UI.h('noiseQuestText','ภารกิจสงบใจ: รักษาเสียงเบา 30 วินาที');
+    UI.h('noiseQuestTime','0 / 30 วิ');UI.h('noiseQuestHint','เริ่มได้เลย ช่วยกันทำงานเบาๆ และฟังเสียงรอบห้อง ⭐');
+    const fill=$('noiseQuestFill');if(fill)fill.style.width='0%';
+  },
+  resetNoiseChallenge:()=>{
+    S.noiseChallengeActive=false;S.noiseQuietMs=0;
+    UI.h('noiseQuestText','ภารกิจสงบใจ: รักษาเสียงเบา 30 วินาที');
+    UI.h('noiseQuestTime','0 / 30 วิ');UI.h('noiseQuestHint','ช่วยกันทำงานเบาๆ ฟังเสียงรอบห้อง แล้วสะสมดาวให้ครบ ⭐');
+    const fill=$('noiseQuestFill');if(fill)fill.style.width='0%';
+  },
+  stopNoise:()=>{
+    if(S.noAnim)cancelAnimationFrame(S.noAnim);
+    if(S.noStream)S.noStream.getTracks().forEach(track=>track.stop());
+    if(S.noiseAudioContext)S.noiseAudioContext.close().catch(error=>console.warn('Unable to close audio context',error));
+    S.noStream=null;S.noAnim=null;S.noiseAnalyser=null;S.noiseAudioContext=null;S.noiseChallengeActive=false;S.noiseLastFrame=0;
+    const status=$('noiseSt');if(status)status.textContent='หยุดวัดเสียงแล้ว';
+  },
   doGroup:()=>{
     const room=UI.v('grpRm'),size=parseInt(UI.v('grpSz'))||4;
     const stus=[...((S.students[S.tab]&&S.students[S.tab][room])||[])].sort(()=>Math.random()-.5);
