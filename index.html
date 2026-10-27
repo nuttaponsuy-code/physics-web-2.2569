@@ -1369,6 +1369,7 @@ var App={
         UI.toast(syncErrors.length?'อัปเดตข้อมูลแล้ว แต่'+syncErrors.join(' และ '):'อัปเดตข้อมูลล่าสุดแล้ว',syncErrors.length?'wn':'ok');
       }
       App.refresh();
+      App.postToolsInit();
     }catch(e){if(show||forceLoad)UI.toast('เชื่อมต่อล้มเหลว: '+e,'er');}
     if(forceLoad)UI.load(false);
   },

@@ -187,6 +187,10 @@ window.addEventListener('message',function(ev){
     $('notReady').style.display='none';
     $('tgMain').style.display='block';
     Ico.bindData($('tgMain'));
+    const panel=$('tgPanel');
+    if(panel&&panel.style.display!=='none'&&['rand','group'].includes(panel.dataset.tool)){
+      App.tool(panel.dataset.tool);
+    }
   }else if(d.type==='ttSubjectChange'){
     S.tab=d.subject||S.tab;
     // ถ้าแผงเครื่องมือที่เปิดอยู่มีตัวเลือกห้องเรียน ให้รีเฟรชรายการห้องให้ตรงวิชาใหม่
@@ -215,7 +219,11 @@ var App={
     const p=$('tgPanel');p.style.display='block';p.dataset.tool=t;
     const rooms=Object.keys(S.students[S.tab]||{});
     if(t==='rand'){
-      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">สุ่มตัวแทนทำโจทย์</div><select class="fc" id="randRm" style="margin-bottom:10px;font-weight:700;" onchange="App.renderPhotoGrid()">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><div id="randReveal" class="rand-reveal"><div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div></div><button class="btn btn-p btn-lg" style="margin-top:10px;" onclick="App.doRand()">สุ่มเลย</button><div class="lbl" style="margin:18px 0 8px;">📷 จัดการรูปนักเรียน (แตะเพื่ออัปโหลด/เปลี่ยนรูป)</div><div id="photoGrid" class="photo-grid"></div>';
+      if(!rooms.length){
+        p.innerHTML='<div class="lbl">ยังไม่พบรายชื่อนักเรียนในวิชานี้ กรุณากลับไปหน้าเว็บครูแล้วกดรีเฟรชข้อมูล</div>';
+        return;
+      }
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">สุ่มตัวแทนทำโจทย์</div><select class="fc" id="randRm" style="margin-bottom:10px;font-weight:700;" onchange="App.renderPhotoGrid()">'+rooms.map(r=>'<option>'+_esc(r)+'</option>').join('')+'</select><div id="randReveal" class="rand-reveal"><div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div></div><button class="btn btn-p btn-lg" style="margin-top:10px;" onclick="App.doRand()">สุ่มเลย</button><div class="lbl" style="margin:18px 0 8px;">📷 จัดการรูปนักเรียน (แตะเพื่ออัปโหลด/เปลี่ยนรูป)</div><div id="photoGrid" class="photo-grid"></div>';
       App.renderPhotoGrid();
     }else if(t==='timer'){
       S.tmrInit=false;S.tmrOn=false;clearInterval(S.tmrIv);
@@ -231,6 +239,10 @@ var App={
     }else if(t==='noise'){
       p.innerHTML='<div class="lbl" style="margin-bottom:10px;">วัดระดับเสียงห้องเรียน</div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><div style="text-align:center;font-size:1.4rem;font-weight:700;color:var(--cy);margin:8px 0;" id="noiseLbl">-- %</div><div id="noiseSt" style="text-align:center;font-size:.78rem;color:var(--t3);margin-bottom:10px;">กด เริ่มวัด เพื่อเปิดไมโครโฟน</div><div style="display:flex;gap:9px;"><button class="btn btn-ok" style="flex:1;" onclick="App.startNoise()">เริ่มวัด</button><button class="btn btn-d" style="flex:1;" onclick="App.stopNoise()">หยุด</button></div>';
     }else if(t==='group'){
+      if(!rooms.length){
+        p.innerHTML='<div class="lbl">ยังไม่พบรายชื่อนักเรียนในวิชานี้ กรุณากลับไปหน้าเว็บครูแล้วกดรีเฟรชข้อมูล</div>';
+        return;
+      }
       p.innerHTML='<div class="lbl" style="margin-bottom:10px;">แบ่งกลุ่มนักเรียน</div><div style="display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap;"><select class="fc" id="grpRm" style="flex:1;min-width:120px;">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="fc" id="grpSz" value="4" min="2" max="10" style="width:60px;text-align:center;"><span style="color:var(--t3);font-size:.8rem;">คน/กลุ่ม</span></div></div><button class="btn btn-p" style="width:100%;margin-bottom:10px;" onclick="App.doGroup()">สุ่มจัดกลุ่ม</button><div id="grpRes"></div>';
     }else if(t==='poll'){
       S.poll={y:0,m:0,n:0};
@@ -256,7 +268,8 @@ var App={
   },
   doRand:()=>{
     const room=UI.v('randRm');
-    const list=S.students[S.tab][room];if(!list)return;
+    const list=(S.students[S.tab]&&S.students[S.tab][room])||[];
+    if(!list.length)return UI.toast('ห้องนี้ยังไม่มีรายชื่อนักเรียน','wn');
     clearInterval(S.randIv);let ticks=0;
     S.randIv=setInterval(()=>{
       const nm=list[Math.floor(Math.random()*list.length)];
@@ -276,8 +289,8 @@ var App={
     return p?p.photoUrl:null;
   },
   renderPhotoGrid:()=>{
-    const room=UI.v('randRm');const grid=$('photoGrid');if(!grid||!room)return;
-    const stus=S.students[S.tab][room]||[];
+    const room=UI.v('randRm');const grid=$('photoGrid');if(!grid)return;
+    const stus=(S.students[S.tab]&&S.students[S.tab][room])||[];
     grid.innerHTML=stus.map(stu=>{
       const url=App.photoFor(S.tab,room,stu);
       const initial=(stu||'?').replace(/^(นาย|นางสาว|เด็กชาย|เด็กหญิง)/,'').charAt(0)||'?';
@@ -369,7 +382,8 @@ var App={
   stopNoise:()=>{if(S.noAnim)cancelAnimationFrame(S.noAnim);if(S.noStream)S.noStream.getTracks().forEach(t=>t.stop());S.noStream=null;S.noAnim=null;},
   doGroup:()=>{
     const room=UI.v('grpRm'),size=parseInt(UI.v('grpSz'))||4;
-    const stus=[...(S.students[S.tab][room]||[])].sort(()=>Math.random()-.5);
+    const stus=[...((S.students[S.tab]&&S.students[S.tab][room])||[])].sort(()=>Math.random()-.5);
+    if(!stus.length)return UI.toast('ห้องนี้ยังไม่มีรายชื่อนักเรียน','wn');
     const groups=[];let i=0;while(i<stus.length){groups.push(stus.slice(i,i+size));i+=size;}
     UI.h('grpRes',`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${groups.map((g,i)=>`<div style="background:var(--g0);border:1px solid var(--gb);border-radius:8px;padding:9px;"><div style="font-weight:700;color:var(--cy);font-size:.76rem;margin-bottom:5px;">กลุ่ม ${i+1}</div>${g.map(n=>`<div style="font-size:.76rem;color:var(--t2);padding:1px 0;">• ${n}</div>`).join('')}</div>`).join('')}</div>`);
   },
