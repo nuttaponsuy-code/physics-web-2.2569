@@ -1232,6 +1232,12 @@ function rebuildIdx(){
   S.exMap=new Map();S.exams.forEach(e=>S.exMap.set(`${e.subject}|${e.room}|${e.student}`,e));
 }
 
+function normalizeAssignmentRecords(records,validAssignments){
+  return (records||[])
+    .map(record=>({...record,assignment:record.assignment||record.name||''}))
+    .filter(record=>validAssignments.has(record.assignment));
+}
+
 function teacherRosterForSubject(subject) {
   const roster={};
   const add=(room,student)=>{
@@ -1303,8 +1309,8 @@ var App={
             S.asns=d.asns||[];
             S.rosterSummary=d.rosterSummary||{};
             const valid=new Set(S.asns.map(a=>a.name));
-            const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
-            S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
+            const sm={};normalizeAssignmentRecords(d.subs,valid).forEach(s=>{sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
+            S.subs=Object.values(sm); S.grds=normalizeAssignmentRecords(d.grds,valid); S.exams=d.exams||[]; S.photos=d.photos||[];
             rebuildIdx(); App.refresh(); S._cached = true;
          }
       }
@@ -1324,8 +1330,8 @@ var App={
       S.asns=d.asns||[];
       S.rosterSummary=d.rosterSummary||{};
       const valid=new Set(S.asns.map(a=>a.name));
-      const sm={};(d.subs||[]).forEach(s=>{if(valid.has(s.assignment))sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
-      S.subs=Object.values(sm); S.grds=(d.grds||[]).filter(g=>valid.has(g.assignment)); S.exams=d.exams||[]; S.photos=d.photos||[];
+      const sm={};normalizeAssignmentRecords(d.subs,valid).forEach(s=>{sm[`${s.subject}|${s.room}|${s.student}|${s.assignment}`]=s;});
+      S.subs=Object.values(sm); S.grds=normalizeAssignmentRecords(d.grds,valid); S.exams=d.exams||[]; S.photos=d.photos||[];
       rebuildIdx();
       if(rosterData&&rosterData.success&&rosterData.roster){
         STUDENTS=rosterData.roster;
