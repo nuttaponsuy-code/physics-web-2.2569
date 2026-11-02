@@ -1234,7 +1234,12 @@ function rebuildIdx(){
 
 function normalizeAssignmentRecords(records,validAssignments){
   return (records||[])
-    .map(record=>({...record,assignment:record.assignment||record.name||''}))
+    .map(record=>({
+      ...record,
+      room:String(record.room==null?'':record.room).trim(),
+      student:String(record.student==null?'':record.student).trim(),
+      assignment:record.assignment||record.name||''
+    }))
     .filter(record=>validAssignments.has(record.assignment));
 }
 
