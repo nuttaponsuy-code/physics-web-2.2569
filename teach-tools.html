@@ -96,6 +96,14 @@ select.fc { appearance: none; background-image: url('data:image/svg+xml;utf8,<sv
 .photo-item { cursor: pointer; }
 .photo-thumb { width: 100%; aspect-ratio: 1/1; border-radius: 50%; object-fit: cover; background: var(--in-b); border: 2px solid var(--in-bd); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--t3); font-size: 1rem; }
 .mood-cell { display: flex; align-items: center; justify-content: center; background: var(--in-b); border: 1.5px solid var(--in-bd); border-radius: 12px; padding: 12px 4px; }
+.tool-note { color: var(--t3); font-size: .75rem; line-height: 1.5; margin: 8px 0; }
+.tool-result { margin-top: 12px; padding: 12px; border: 1px solid var(--gb); border-radius: 12px; background: var(--g1); }
+.group-card { background: var(--g0); border: 1px solid var(--gb); border-radius: 12px; padding: 12px; }
+.group-student { font-size: .82rem; color: var(--t2); padding: 3px 0; overflow-wrap: anywhere; }
+.group-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.group-actions .btn { flex: 1; min-width: 130px; }
+.noise-record-row { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--gb); font-size: .78rem; }
+.noise-record-row:last-child { border-bottom: 0; }
 </style>
 </head>
 <body>
@@ -160,12 +168,47 @@ var UI={
   }
 };
 function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _storageRead(key,fallback){
+  try{
+    const value=localStorage.getItem(key);
+    return value===null?fallback:JSON.parse(value);
+  }catch(error){
+    console.error('Unable to read saved teaching-tool data',error);
+    UI.toast('อ่านข้อมูลที่บันทึกไว้ไม่ได้','er');
+    return fallback;
+  }
+}
+function _storageWrite(key,value){
+  try{
+    localStorage.setItem(key,JSON.stringify(value));
+    return true;
+  }catch(error){
+    console.error('Unable to save teaching-tool data',error);
+    UI.toast('บันทึกข้อมูลไม่สำเร็จ พื้นที่จัดเก็บอาจเต็ม','er');
+    return false;
+  }
+}
+function _toolKey(prefix,subject,room){
+  return prefix+':'+encodeURIComponent(subject)+':'+encodeURIComponent(room);
+}
+function _roomPreference(prefix,subject,rooms,selectId){
+  const select=$(selectId);if(!select||!rooms.length)return;
+  const key=prefix+':'+encodeURIComponent(subject);
+  const saved=_storageRead(key,rooms[0]);
+  if(rooms.includes(saved))select.value=saved;
+}
+function _saveRoomPreference(prefix,subject,room){
+  if(room)_storageWrite(prefix+':'+encodeURIComponent(subject),room);
+}
+function _dateTime(value){
+  return new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+}
 
 /* ===== สถานะ: รับข้อมูลจากหน้าแม่ (index.html) ผ่าน postMessage ===== */
 var S={
   ready:false, tab:'', students:{}, formulas:{}, apiUrl:'', photos:[],
   tmrIv:null,tmrOn:false,tmrSec:0,tmrInit:false,tmrDown:true,tmrFS:false,wakeLock:null,
-  noStream:null,noAnim:null,noiseAudioContext:null,noiseAnalyser:null,noiseLevel:0,noiseStarting:false,
+  noStream:null,noAnim:null,noiseAudioContext:null,noiseAnalyser:null,noiseLevel:0,noiseStarting:false,noiseSamples:[],noiseSampleAt:0,noiseStartedAt:0,noiseSessionRoom:'',noiseSessionSubject:'',
   noiseChallengeActive:false,noiseQuietMs:0,noiseLastFrame:0,randIv:null,poll:{y:0,m:0,n:0},
   msgIv:null,msgCache:[],moodIv:null,pendingPhotoTarget:null
 };
@@ -201,9 +244,10 @@ window.addEventListener('message',function(ev){
       App.tool(panel.dataset.tool);
     }
   }else if(d.type==='ttSubjectChange'){
+    const panel=$('tgPanel');
+    if(S.tab!==d.subject&&panel&&panel.dataset.tool==='noise'&&S.noStream)App.stopNoise();
     S.tab=d.subject||S.tab;
     // ถ้าแผงเครื่องมือที่เปิดอยู่มีตัวเลือกห้องเรียน ให้รีเฟรชรายการห้องให้ตรงวิชาใหม่
-    const panel=$('tgPanel');
     if(panel&&panel.style.display!=='none'&&panel.dataset.tool){App.tool(panel.dataset.tool);}
   }else if(d.type==='ttTheme'){
     document.documentElement.setAttribute('data-theme',d.theme||'dark');
@@ -224,6 +268,7 @@ window.addEventListener('message',function(ev){
 
 var App={
   tool:t=>{
+    clearInterval(S.randIv);S.randIv=null;
     $('tgMain').style.display='none';$('tgBack').style.display='block';
     const p=$('tgPanel');p.style.display='block';p.dataset.tool=t;
     const rooms=Object.keys(S.students[S.tab]||{});
@@ -232,8 +277,10 @@ var App={
         p.innerHTML='<div class="lbl">ยังไม่พบรายชื่อนักเรียนในวิชานี้ กรุณากลับไปหน้าเว็บครูแล้วกดรีเฟรชข้อมูล</div>';
         return;
       }
-      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">สุ่มตัวแทนทำโจทย์</div><select class="fc" id="randRm" style="margin-bottom:10px;font-weight:700;" onchange="App.renderPhotoGrid()">'+rooms.map(r=>'<option>'+_esc(r)+'</option>').join('')+'</select><div id="randReveal" class="rand-reveal"><div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div></div><button class="btn btn-p btn-lg" style="margin-top:10px;" onclick="App.doRand()">สุ่มเลย</button><div class="lbl" style="margin:18px 0 8px;">📷 จัดการรูปนักเรียน (แตะเพื่ออัปโหลด/เปลี่ยนรูป)</div><div id="photoGrid" class="photo-grid"></div>';
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">สุ่มตัวแทนทำโจทย์</div><select class="fc" id="randRm" style="margin-bottom:10px;font-weight:700;" onchange="App.renderRandRoom()">'+rooms.map(r=>'<option value="'+_esc(r)+'">'+_esc(r)+'</option>').join('')+'</select><div id="randReveal" class="rand-reveal"><div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div></div><div id="randTime" class="tool-note" style="text-align:center;">ผลล่าสุดจะถูกเก็บไว้ในอุปกรณ์นี้</div><div style="display:flex;gap:8px;"><button class="btn btn-p" style="flex:1;margin-top:10px;" onclick="App.doRand()">สุ่มชื่อ</button><button class="btn btn-g" style="margin-top:10px;" onclick="App.clearRand()">ล้างผล</button></div><div class="lbl" style="margin:18px 0 8px;">📷 จัดการรูปนักเรียน (แตะเพื่ออัปโหลด/เปลี่ยนรูป)</div><div id="photoGrid" class="photo-grid"></div>';
+      _roomPreference('ttRandRoom',S.tab,rooms,'randRm');
       App.renderPhotoGrid();
+      App.renderRandRoom();
     }else if(t==='timer'){
       S.tmrInit=false;S.tmrOn=false;clearInterval(S.tmrIv);
       p.innerHTML='<div class="lbl" style="margin-bottom:10px;">จับเวลา</div><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><input type="number" class="fc" id="tmrIn" value="5" min="1" max="90" style="width:70px;text-align:center;"><span style="color:var(--t3);font-size:.82rem;">นาที</span><select class="fc" id="tmrMd" style="flex:1;"><option value="down">นับถอยหลัง</option><option value="up">นับขึ้น</option></select></div><div class="timer-d" id="tmrDisp">5:00</div><div style="display:flex;gap:8px;"><button class="btn btn-ok" style="flex:1;" onclick="App.tmrStart()">เริ่ม</button><button class="btn btn-g" style="flex:1;" onclick="App.tmrPause()">หยุด</button><button class="btn btn-d" style="flex:1;" onclick="App.tmrReset()">รีเซต</button></div><button class="btn btn-o btn-lg" style="margin-top:10px;" onclick="App.tmrFullscreen()">⛶ เต็มจอ (กันจอดับ)</button><div class="wl-badge" id="wlBadgeSm" style="display:none;">🔒 หน้าจอจะไม่ดับระหว่างจับเวลา</div>';
@@ -246,13 +293,17 @@ var App={
         return '<div class="fm-item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><span class="fm-sym">'+title+'</span><span style="font-size:.74rem;color:var(--t3);display:block;">'+desc+'</span></div>'+(url?'<a href="'+url+'" target="_blank" class="btn btn-p btn-sm" style="text-decoration:none;flex-shrink:0;">เปิดดู 🔗</a>':'')+'</div>';
       }).join('')+'</div>';
     }else if(t==='noise'){
-      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">🔊 ห้องเรียนเสียงพอดี เรียนรู้ได้เต็มที่</div><div class="noise-panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><div style="font-size:.76rem;color:var(--t3);">ระดับเสียงสัมพัทธ์</div><div id="noiseLbl" style="font-size:1.7rem;font-weight:700;color:var(--cy);">--%</div></div><div id="noiseSt" style="font-size:.82rem;font-weight:700;color:var(--t2);text-align:right;">กดเริ่มวัดเพื่อดูกราฟเสียง</div></div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><canvas id="noiseChart" class="noise-chart" role="img" aria-label="กราฟความถี่เสียงรอบตัว"></canvas><div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t3);"><span>เสียงต่ำ</span><span>ความถี่ (Hz)</span><span>เสียงสูง</span></div><div class="noise-quest"><div class="noise-quest-head"><span id="noiseQuestText">ภารกิจสงบใจ: รักษาเสียงเบา 30 วินาที</span><span id="noiseQuestTime">0 / 30 วิ</span></div><div class="noise-quest-track"><div id="noiseQuestFill" class="noise-quest-fill"></div></div><div id="noiseQuestHint" class="noise-hint">ช่วยกันทำงานเบาๆ ฟังเสียงรอบห้อง แล้วสะสมดาวให้ครบ ⭐</div></div><div class="noise-actions"><button class="btn btn-ok" onclick="App.startNoise()">เริ่มวัด</button><button class="btn btn-p" onclick="App.startNoiseChallenge()">เริ่มภารกิจ ⭐</button><button class="btn btn-g" onclick="App.resetNoiseChallenge()">เริ่มภารกิจใหม่</button><button class="btn btn-d" onclick="App.stopNoise()">หยุดไมโครโฟน</button></div><div class="noise-hint">กราฟแสดงย่านความถี่เสียงจากไมโครโฟน ไม่ใช่เครื่องวัดเดซิเบลมาตรฐาน ค่าที่เห็นใช้เปรียบเทียบระดับเสียงในห้องนี้เท่านั้น</div></div>';
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">🔊 ห้องเรียนเสียงพอดี เรียนรู้ได้เต็มที่</div><div class="noise-panel"><label class="lbl" for="noiseRm">ห้องเรียน</label><select class="fc" id="noiseRm" style="margin-bottom:12px;" onchange="App.renderNoiseHistory()">'+rooms.map(r=>'<option value="'+_esc(r)+'">'+_esc(r)+'</option>').join('')+'</select><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><div style="font-size:.76rem;color:var(--t3);">ระดับเสียงสัมพัทธ์</div><div id="noiseLbl" style="font-size:1.7rem;font-weight:700;color:var(--cy);">--%</div></div><div id="noiseSt" style="font-size:.82rem;font-weight:700;color:var(--t2);text-align:right;">กดเริ่มวัดเพื่อดูกราฟเสียง</div></div><div class="noise-lv"><div class="noise-b" id="noiseB" style="width:0%;background:var(--ok);"></div></div><canvas id="noiseChart" class="noise-chart" role="img" aria-label="กราฟความถี่เสียงรอบตัว"></canvas><div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t3);"><span>เสียงต่ำ</span><span>ความถี่ (Hz)</span><span>เสียงสูง</span></div><div class="noise-quest"><div class="noise-quest-head"><span id="noiseQuestText">ภารกิจสงบใจ: รักษาเสียงเบา 30 วินาที</span><span id="noiseQuestTime">0 / 30 วิ</span></div><div class="noise-quest-track"><div id="noiseQuestFill" class="noise-quest-fill"></div></div><div id="noiseQuestHint" class="noise-hint">ช่วยกันทำงานเบาๆ ฟังเสียงรอบห้อง แล้วสะสมดาวให้ครบ ⭐</div></div><div class="noise-actions"><button class="btn btn-ok" onclick="App.startNoise()">เริ่มบันทึก</button><button class="btn btn-p" onclick="App.startNoiseChallenge()">เริ่มภารกิจ ⭐</button><button class="btn btn-g" onclick="App.resetNoiseChallenge()">เริ่มภารกิจใหม่</button><button class="btn btn-d" onclick="App.stopNoise()">หยุดและบันทึกค่าเฉลี่ย</button></div><div id="noiseSummary" class="tool-result" aria-live="polite">เริ่มบันทึกเพื่อเก็บค่าระดับเสียงเฉลี่ย</div><div id="noiseHistory" class="tool-result"></div><div class="noise-hint">กราฟและค่าเฉลี่ยแสดงระดับสัมพัทธ์จากไมโครโฟน ไม่ใช่เครื่องวัดเดซิเบลมาตรฐาน ใช้เปรียบเทียบภายในห้องเดียวกันเท่านั้น</div></div>';
+      _roomPreference('ttNoiseRoom',S.tab,rooms,'noiseRm');
+      App.renderNoiseHistory();
     }else if(t==='group'){
       if(!rooms.length){
         p.innerHTML='<div class="lbl">ยังไม่พบรายชื่อนักเรียนในวิชานี้ กรุณากลับไปหน้าเว็บครูแล้วกดรีเฟรชข้อมูล</div>';
         return;
       }
-      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">แบ่งกลุ่มนักเรียน</div><div style="display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap;"><select class="fc" id="grpRm" style="flex:1;min-width:120px;">'+rooms.map(r=>'<option>'+r+'</option>').join('')+'</select><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="fc" id="grpSz" value="4" min="2" max="10" style="width:60px;text-align:center;"><span style="color:var(--t3);font-size:.8rem;">คน/กลุ่ม</span></div></div><button class="btn btn-p" style="width:100%;margin-bottom:10px;" onclick="App.doGroup()">สุ่มจัดกลุ่ม</button><div id="grpRes"></div>';
+      p.innerHTML='<div class="lbl" style="margin-bottom:10px;">จัดกลุ่มนักเรียน</div><div class="tool-note">สุ่มแบบกระจายจำนวนสมาชิกให้แต่ละกลุ่มใกล้เคียงกัน รายชื่อและวันที่บันทึกไว้ในอุปกรณ์นี้</div><label class="lbl" for="grpRm">ห้องเรียน</label><select class="fc" id="grpRm" style="margin-bottom:10px;" onchange="App.renderGroupHistory()">'+rooms.map(r=>'<option value="'+_esc(r)+'">'+_esc(r)+'</option>').join('')+'</select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"><select class="fc" id="grpMode" onchange="App.updateGroupMode()"><option value="size">กำหนดจำนวนคนต่อกลุ่ม</option><option value="count">กำหนดจำนวนกลุ่ม</option></select><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="fc" id="grpSize" value="4" min="2" max="60" style="text-align:center;"><span id="grpModeLabel" style="color:var(--t3);font-size:.76rem;white-space:nowrap;">คน/กลุ่ม</span></div></div><button class="btn btn-p btn-lg" onclick="App.doGroup()">สุ่มจัดกลุ่มใหม่</button><div id="grpRes"></div>';
+      _roomPreference('ttGroupRoom',S.tab,rooms,'grpRm');
+      App.renderGroupHistory();
     }else if(t==='poll'){
       S.poll={y:0,m:0,n:0};
       p.innerHTML='<div class="lbl" style="margin-bottom:10px;">โหวตความเข้าใจ</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px;"><div style="text-align:center;cursor:pointer;padding:14px;background:var(--ok-b);border:1.5px solid var(--ok-bd);border-radius:12px;" onclick="App.vote(\'y\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--ok);">Y</div><div style="font-weight:700;color:var(--ok);margin-top:5px;" id="py">0</div><div style="font-size:.72rem;color:var(--t3);">เข้าใจ</div></div><div style="text-align:center;cursor:pointer;padding:14px;background:var(--wn-b);border:1.5px solid var(--wn-bd);border-radius:12px;" onclick="App.vote(\'m\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--wn);">?</div><div style="font-weight:700;color:var(--wn);margin-top:5px;" id="pm">0</div><div style="font-size:.72rem;color:var(--t3);">ยังงง</div></div><div style="text-align:center;cursor:pointer;padding:14px;background:var(--er-b);border:1.5px solid var(--er-bd);border-radius:12px;" onclick="App.vote(\'n\',this)"><div style="font-weight:700;font-size:1.1rem;color:var(--er);">N</div><div style="font-weight:700;color:var(--er);margin-top:5px;" id="pn">0</div><div style="font-size:.72rem;color:var(--t3);">ไม่เข้าใจ</div></div></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:.8rem;color:var(--t3);">รวม:</span><span id="ptot" style="font-weight:700;color:var(--cy);">0</span><span style="font-size:.8rem;color:var(--t3);">โหวต</span></div><button class="btn btn-g btn-sm" onclick="App.resetPoll()">รีเซตผล</button>';
@@ -279,12 +330,44 @@ var App={
     const room=UI.v('randRm');
     const list=(S.students[S.tab]&&S.students[S.tab][room])||[];
     if(!list.length)return UI.toast('ห้องนี้ยังไม่มีรายชื่อนักเรียน','wn');
-    clearInterval(S.randIv);let ticks=0;
+    clearInterval(S.randIv);
+    const winner=list[Math.floor(Math.random()*list.length)];
+    const result={student:winner,createdAt:new Date().toISOString()};
+    if(!_storageWrite(_toolKey('ttRand',S.tab,room),result))return;
+    let ticks=0;
     S.randIv=setInterval(()=>{
       const nm=list[Math.floor(Math.random()*list.length)];
       App._renderReveal(nm,room,false);
-      if(++ticks>28){clearInterval(S.randIv);App._renderReveal(nm,room,true);}
+      if(++ticks>28){
+        clearInterval(S.randIv);
+        S.randIv=null;
+        App._renderReveal(winner,room,true);
+        UI.h('randTime','สุ่มเมื่อ '+_dateTime(result.createdAt)+' • ผลจะยังอยู่เมื่อกลับมาเปิดใหม่');
+      }
     },55);
+  },
+  renderRandRoom:()=>{
+    clearInterval(S.randIv);S.randIv=null;
+    App.renderPhotoGrid();
+    const room=UI.v('randRm');
+    _saveRoomPreference('ttRandRoom',S.tab,room);
+    const saved=_storageRead(_toolKey('ttRand',S.tab,room),null);
+    if(saved&&saved.student){
+      App._renderReveal(saved.student,room,true);
+      UI.h('randTime','สุ่มเมื่อ '+_dateTime(saved.createdAt));
+    }else{
+      const rev=$('randReveal');
+      if(rev)rev.innerHTML='<div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div>';
+      UI.h('randTime','ยังไม่มีผลสุ่มที่บันทึกไว้สำหรับห้องนี้');
+    }
+  },
+  clearRand:()=>{
+    const room=UI.v('randRm');if(!room)return;
+    try{localStorage.removeItem(_toolKey('ttRand',S.tab,room));}
+    catch(error){console.error('Unable to clear saved random result',error);return UI.toast('ล้างผลที่บันทึกไว้ไม่สำเร็จ','er');}
+    const rev=$('randReveal');
+    if(rev)rev.innerHTML='<div class="rand-reveal-ph"><span>🎲</span></div><div class="rand-reveal-name">พร้อมสุ่ม!</div>';
+    UI.h('randTime','ล้างผลสุ่มของห้องนี้แล้ว');
   },
   _renderReveal:(name,room,final)=>{
     const rev=$('randReveal');if(!rev)return;
@@ -307,6 +390,96 @@ var App={
         +(url?'<img src="'+url+'" class="photo-thumb">':'<div class="photo-thumb">'+initial+'</div>')
         +'</div>';
     }).join('');
+  },
+  updateGroupMode:()=>{
+    const mode=UI.v('grpMode'),input=$('grpSize'),label=$('grpModeLabel');
+    if(!input||!label)return;
+    label.textContent=mode==='count'?'กลุ่ม':'คน/กลุ่ม';
+    input.min=mode==='count'?'1':'2';
+    input.value=mode==='count'?'4':'4';
+  },
+  renderGroupHistory:()=>{
+    const room=UI.v('grpRm'),container=$('grpRes');if(!container)return;
+    _saveRoomPreference('ttGroupRoom',S.tab,room);
+    const key=_toolKey('ttGroups',S.tab,room);
+    const saved=_storageRead(key,[]);
+    S.groupHistory=Array.isArray(saved)?saved.filter(item=>item&&Array.isArray(item.groups)&&item.createdAt):[];
+    if(!S.groupHistory.length){
+      container.innerHTML='<div class="tool-result tool-note">ยังไม่มีการจัดกลุ่มที่บันทึกไว้สำหรับห้องนี้</div>';
+      return;
+    }
+    container.innerHTML='<div class="tool-result"><label class="lbl" for="grpHistorySelect">ผลการจัดกลุ่มที่บันทึกไว้</label><select class="fc" id="grpHistorySelect" onchange="App.showGroupRecord(Number(this.value))">'+S.groupHistory.map((item,index)=>'<option value="'+index+'">'+_esc(_dateTime(item.createdAt))+' • '+item.studentCount+' คน / '+item.groups.length+' กลุ่ม</option>').join('')+'</select><div id="grpRecord"></div><div class="group-actions"><button class="btn btn-o" onclick="App.downloadGroupImage()">ดาวน์โหลดภาพ PNG</button><button class="btn btn-g" onclick="App.clearGroupHistory()">ล้างประวัติห้องนี้</button></div></div>';
+    App.showGroupRecord(0);
+  },
+  showGroupRecord:(index)=>{
+    const record=(S.groupHistory||[])[index],target=$('grpRecord');
+    if(!record||!target)return;
+    target.innerHTML='<div class="tool-note">บันทึกเมื่อ '+_esc(_dateTime(record.createdAt))+' • '+record.studentCount+' คน • '+record.groups.length+' กลุ่ม</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">'+record.groups.map((group,i)=>'<div class="group-card"><div style="font-weight:700;color:var(--cy);font-size:.85rem;margin-bottom:6px;">กลุ่ม '+(i+1)+' <span style="color:var(--t3);font-weight:400;">('+group.length+' คน)</span></div>'+group.map(name=>'<div class="group-student">• '+_esc(name)+'</div>').join('')+'</div>').join('')+'</div>';
+  },
+  clearGroupHistory:()=>{
+    const room=UI.v('grpRm');if(!room)return;
+    if(!confirm('ยืนยันลบประวัติการจัดกลุ่มทั้งหมดของห้อง '+room+'?'))return;
+    try{localStorage.removeItem(_toolKey('ttGroups',S.tab,room));}
+    catch(error){console.error('Unable to clear group history',error);return UI.toast('ล้างประวัติไม่สำเร็จ','er');}
+    App.renderGroupHistory();
+    UI.toast('ล้างประวัติการจัดกลุ่มแล้ว','ok');
+  },
+  downloadGroupImage:()=>{
+    const selected=$('grpHistorySelect');
+    const record=(S.groupHistory||[])[selected?Number(selected.value):0];
+    if(!record)return UI.toast('ไม่พบผลการจัดกลุ่มสำหรับดาวน์โหลด','er');
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+    if(!ctx)return UI.toast('เบราว์เซอร์ไม่รองรับการสร้างภาพ','er');
+    const columns=3,gap=24,padding=48,cardWidth=360;
+    const maxMembers=Math.max(1,...record.groups.map(group=>group.length));
+    const cardHeight=82+maxMembers*42;
+    const rows=Math.ceil(record.groups.length/columns);
+    canvas.width=padding*2+columns*cardWidth+(columns-1)*gap;
+    canvas.height=padding*2+130+rows*cardHeight+(rows-1)*gap;
+    ctx.fillStyle='#f3f6fb';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#152238';ctx.font='700 36px Kanit, sans-serif';ctx.fillText('บันทึกการจัดกลุ่ม',padding,padding+38);
+    ctx.font='500 22px Kanit, sans-serif';ctx.fillStyle='#42536b';
+    ctx.fillText('วิชา '+S.tab+'  •  ห้อง '+UI.v('grpRm'),padding,padding+78);
+    ctx.fillText(_dateTime(record.createdAt)+'  •  นักเรียน '+record.studentCount+' คน',padding,padding+112);
+    record.groups.forEach((group,index)=>{
+      const x=padding+(index%columns)*(cardWidth+gap);
+      const y=padding+140+Math.floor(index/columns)*(cardHeight+gap);
+      ctx.fillStyle='#ffffff';ctx.fillRect(x,y,cardWidth,cardHeight);
+      ctx.strokeStyle='#d5dfeb';ctx.lineWidth=2;ctx.strokeRect(x,y,cardWidth,cardHeight);
+      ctx.fillStyle='#087fbe';ctx.font='700 24px Kanit, sans-serif';
+      ctx.fillText('กลุ่ม '+(index+1)+' ('+group.length+' คน)',x+18,y+36);
+      ctx.fillStyle='#25364d';ctx.font='400 20px Kanit, sans-serif';
+      group.forEach((name,memberIndex)=>ctx.fillText((memberIndex+1)+'. '+name,x+20,y+70+memberIndex*38,cardWidth-40));
+    });
+    canvas.toBlob(blob=>{
+      if(!blob)return UI.toast('สร้างไฟล์ภาพไม่สำเร็จ','er');
+      const link=document.createElement('a'),url=URL.createObjectURL(blob);
+      link.href=url;
+      link.download='groups-'+String(S.tab+'-'+UI.v('grpRm')+'-'+record.createdAt.slice(0,10)).replace(/[\\/:*?"<>|]+/g,'-')+'.png';
+      link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      UI.toast('ดาวน์โหลดภาพรายชื่อพร้อมวันที่แล้ว','ok');
+    },'image/png');
+  },
+  doGroup:()=>{
+    const room=UI.v('grpRm'),mode=UI.v('grpMode');
+    const input=Number.parseInt(UI.v('grpSize'),10);
+    const students=[...((S.students[S.tab]&&S.students[S.tab][room])||[])];
+    if(!students.length)return UI.toast('ห้องนี้ยังไม่มีรายชื่อนักเรียน','wn');
+    if(!Number.isInteger(input)||input<(mode==='count'?1:2))return UI.toast('กรุณาระบุจำนวนกลุ่มหรือสมาชิกต่อกลุ่มให้ถูกต้อง','wn');
+    for(let i=students.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [students[i],students[j]]=[students[j],students[i]];
+    }
+    const groupCount=mode==='count'?Math.min(input,students.length):Math.ceil(students.length/input);
+    const groups=Array.from({length:groupCount},()=>[]);
+    students.forEach((student,index)=>groups[index%groupCount].push(student));
+    const key=_toolKey('ttGroups',S.tab,room),history=_storageRead(key,[]);
+    const record={createdAt:new Date().toISOString(),studentCount:students.length,groups};
+    const nextHistory=[record,...(Array.isArray(history)?history:[])].slice(0,20);
+    if(!_storageWrite(key,nextHistory))return;
+    App.renderGroupHistory();
+    UI.toast('จัดกลุ่มและบันทึกผลพร้อมวันที่แล้ว','ok');
   },
   pickPhoto:(room,student)=>{
     S.pendingPhotoTarget={room,student};
@@ -389,7 +562,10 @@ var App={
       const src=ctx.createMediaStreamSource(stream),ana=ctx.createAnalyser();
       ana.fftSize=2048;ana.smoothingTimeConstant=.78;src.connect(ana);
       S.noiseAnalyser=ana;S.noiseLevel=0;
+      S.noiseSamples=[];S.noiseSampleAt=0;S.noiseStartedAt=performance.now();
+      S.noiseSessionRoom=UI.v('noiseRm');S.noiseSessionSubject=S.tab;
       S.noiseLastFrame=performance.now();
+      UI.h('noiseSummary','กำลังบันทึกระดับเสียงของห้อง '+_esc(S.noiseSessionRoom)+'…');
       const spectrum=new Uint8Array(ana.frequencyBinCount);
       const waveform=new Uint8Array(ana.fftSize);
       const tick=()=>{
@@ -403,6 +579,7 @@ var App={
         const rms=Math.sqrt(energy/waveform.length);
         S.noiseLevel=S.noiseLevel*.78+Math.min(100,rms*400)*.22;
         const pct=Math.round(S.noiseLevel),quietLimit=24;
+        if(now-S.noiseSampleAt>=250){S.noiseSamples.push(pct);S.noiseSampleAt=now;}
         const bar=$('noiseB'),lbl=$('noiseLbl'),st=$('noiseSt');
         const color=pct>55?'var(--er)':pct>quietLimit?'var(--wn)':'var(--ok)';
         if(bar){bar.style.width=pct+'%';bar.style.background=color;}
@@ -495,19 +672,40 @@ var App={
     UI.h('noiseQuestTime','0 / 30 วิ');UI.h('noiseQuestHint','ช่วยกันทำงานเบาๆ ฟังเสียงรอบห้อง แล้วสะสมดาวให้ครบ ⭐');
     const fill=$('noiseQuestFill');if(fill)fill.style.width='0%';
   },
-  stopNoise:()=>{
+  stopNoise:(saveRecord=true)=>{
+    const wasRecording=!!S.noStream;
+    const samples=S.noiseSamples.slice();
+    const room=S.noiseSessionRoom,subject=S.noiseSessionSubject;
+    const duration=performance.now()-S.noiseStartedAt;
     if(S.noAnim)cancelAnimationFrame(S.noAnim);
     if(S.noStream)S.noStream.getTracks().forEach(track=>track.stop());
     if(S.noiseAudioContext)S.noiseAudioContext.close().catch(error=>console.warn('Unable to close audio context',error));
     S.noStream=null;S.noAnim=null;S.noiseAnalyser=null;S.noiseAudioContext=null;S.noiseChallengeActive=false;S.noiseLastFrame=0;
+    S.noiseSamples=[];S.noiseSampleAt=0;S.noiseStartedAt=0;
     const status=$('noiseSt');if(status)status.textContent='หยุดวัดเสียงแล้ว';
+    if(!saveRecord||!wasRecording)return;
+    if(duration<1000||!samples.length){
+      UI.h('noiseSummary','บันทึกไม่สำเร็จ: วัดเสียงสั้นเกินไป กรุณาบันทึกอย่างน้อย 1 วินาที');
+      UI.toast('วัดเสียงนานขึ้นก่อนหยุด เพื่อคำนวณค่าเฉลี่ย','wn');
+      return;
+    }
+    const average=Math.round(samples.reduce((sum,value)=>sum+value,0)/samples.length);
+    const key=_toolKey('ttNoise',subject,room),history=_storageRead(key,[]);
+    const record={createdAt:new Date().toISOString(),average,sampleCount:samples.length};
+    const nextHistory=[record,...(Array.isArray(history)?history:[])].slice(0,30);
+    if(!_storageWrite(key,nextHistory))return;
+    UI.h('noiseSummary','ค่าเฉลี่ยที่บันทึก: <strong>'+average+'%</strong> • '+_dateTime(record.createdAt)+' • '+samples.length+' ตัวอย่าง');
+    App.renderNoiseHistory();
+    UI.toast('บันทึกค่าเฉลี่ยเสียงเรียบร้อยแล้ว','ok');
   },
-  doGroup:()=>{
-    const room=UI.v('grpRm'),size=parseInt(UI.v('grpSz'))||4;
-    const stus=[...((S.students[S.tab]&&S.students[S.tab][room])||[])].sort(()=>Math.random()-.5);
-    if(!stus.length)return UI.toast('ห้องนี้ยังไม่มีรายชื่อนักเรียน','wn');
-    const groups=[];let i=0;while(i<stus.length){groups.push(stus.slice(i,i+size));i+=size;}
-    UI.h('grpRes',`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">${groups.map((g,i)=>`<div style="background:var(--g0);border:1px solid var(--gb);border-radius:8px;padding:9px;"><div style="font-weight:700;color:var(--cy);font-size:.76rem;margin-bottom:5px;">กลุ่ม ${i+1}</div>${g.map(n=>`<div style="font-size:.76rem;color:var(--t2);padding:1px 0;">• ${n}</div>`).join('')}</div>`).join('')}</div>`);
+  renderNoiseHistory:()=>{
+    const room=UI.v('noiseRm'),container=$('noiseHistory');
+    if(!container||!room)return;
+    _saveRoomPreference('ttNoiseRoom',S.tab,room);
+    const history=_storageRead(_toolKey('ttNoise',S.tab,room),[]);
+    const records=Array.isArray(history)?history.filter(item=>item&&Number.isFinite(item.average)&&item.createdAt):[];
+    container.innerHTML='<div class="lbl">ประวัติการบันทึก</div>'+(records.length?records.slice(0,5).map(record=>'<div class="noise-record-row"><span>'+_esc(_dateTime(record.createdAt))+'</span><strong>'+record.average+'%</strong></div>').join(''):'<div class="tool-note">ยังไม่มีผลบันทึกของห้องนี้ • ค่าเฉลี่ยเก็บไว้ในอุปกรณ์นี้</div>');
+    if(records.length)UI.h('noiseSummary','ผลล่าสุด: <strong>'+records[0].average+'%</strong> • '+_dateTime(records[0].createdAt));
   },
   vote:(t,el)=>{S.poll[t]=(S.poll[t]||0)+1;const tot=S.poll.y+S.poll.m+S.poll.n;UI.h('py',S.poll.y);UI.h('pm',S.poll.m);UI.h('pn',S.poll.n);UI.h('ptot',tot);el.style.transform='scale(1.06)';setTimeout(()=>el.style.transform='',200);},
   resetPoll:()=>{S.poll={y:0,m:0,n:0};UI.h('py',0);UI.h('pm',0);UI.h('pn',0);UI.h('ptot',0);},
