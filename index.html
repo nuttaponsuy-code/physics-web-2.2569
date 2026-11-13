@@ -150,17 +150,60 @@ div:has(> .stab) { background: var(--in-b); border: 1px solid var(--in-bd); bord
 .upload-modes { display:flex; gap:8px; margin-bottom:10px; }
 .upload-mode { flex:1; padding:9px 10px; border:1px solid var(--in-bd); border-radius:var(--r-sm); background:var(--in-b); color:var(--t2); font-weight:600; cursor:pointer; }
 .upload-mode.active { border-color:var(--ac); background:var(--ac-bg); color:var(--ac); }
-.cool-upload { padding:12px; border:1px solid var(--gb); border-radius:var(--r-md); background:var(--g0); }
-.cool-stage { position:relative; height:230px; overflow:hidden; border:1.5px dashed var(--in-bd); border-radius:var(--r-sm); touch-action:none; }
-.cool-stage.over { border-color:var(--ac); background:var(--ac-bg); }
-.cool-hoop { position:absolute; left:50%; top:34px; transform:translateX(-50%); width:74px; height:64px; border:5px solid var(--ac); border-top:0; border-radius:0 0 24px 24px; opacity:.8; pointer-events:none; }
-.cool-hoop::before { content:''; position:absolute; width:86px; height:9px; left:50%; top:-7px; transform:translateX(-50%); border:3px solid var(--cy); border-radius:50%; }
-.cool-ball { position:absolute; left:24px; bottom:14px; width:50px; height:50px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#ffb340,#f36b21); color:#fff; font-size:1.25rem; box-shadow:0 5px 16px rgba(0,0,0,.28); cursor:grab; touch-action:none; user-select:none; }
-.cool-ball:active { cursor:grabbing; }
-.cool-status { min-height:1.4em; margin-top:8px; color:var(--t3); font-size:.8rem; text-align:center; }
-.cool-file-list { margin-top:8px; display:grid; gap:5px; }
-.cool-file-item { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:6px 9px; border-radius:8px; background:var(--in-b); color:var(--t2); font-size:.76rem; }
-@media (prefers-reduced-motion:reduce) { .cool-ball { transition:none !important; } }
+.cool-upload { width:100%; }
+.cool-card { --cbg:#eef0f6; --ccard:#f8f9fc; --cink:#14151f; --cmuted:#8a8da0; --cline:#c9cde0; --caccent:#4f46c8; --csoft:#e3e4f6; --cwhite:#fff; --cshadow:rgba(40,45,90,.14); width:100%; max-width:380px; margin:0 auto; padding:24px 22px 18px; border-radius:28px; background:var(--ccard); color:var(--cink); box-shadow:0 20px 50px var(--cshadow),0 1px 0 rgba(255,255,255,.6) inset; font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif; }
+.cool-card, .cool-card * { box-sizing:border-box; }
+.cool-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.cool-title { margin:0; font-size:22px; line-height:1.2; letter-spacing:-.02em; color:var(--cink); }
+.cool-sub { margin:6px 0 0; color:var(--cmuted); font-size:13px; }
+.cool-tools { display:flex; gap:8px; align-items:center; }
+.cool-icon-btn { width:34px; height:34px; flex:none; border:0; border-radius:50%; background:var(--csoft); color:var(--cmuted); display:grid; place-items:center; cursor:pointer; }
+.cool-count { padding:8px 14px; border-radius:999px; background:var(--csoft); color:var(--cmuted); font-size:12px; white-space:nowrap; }
+.cool-count b { display:inline-block; color:var(--cink); transition:transform .3s; }
+.cool-count b.pop { transform:scale(1.5); }
+.cool-stage { position:relative; height:440px; margin-top:16px; }
+.cool-zone { position:absolute; inset:0 0 auto; height:250px; padding-top:26px; border:1.5px dashed var(--cline); border-radius:18px; display:flex; flex-direction:column; align-items:center; cursor:pointer; transition:background .2s,border-color .2s; }
+.cool-zone.over { border-color:var(--caccent); background:var(--csoft); }
+.cool-zone svg { color:var(--cink); }
+.cool-zone strong { margin-top:6px; color:var(--cink); font-size:14px; }
+.cool-zone small { margin-top:3px; color:var(--cmuted); font-size:12px; }
+.cool-zone.busy>*:not(.cool-up) { opacity:0; }
+.cool-up { position:absolute; top:16px; right:14px; left:14px; padding:13px 14px; border-radius:14px; background:var(--cwhite); box-shadow:0 8px 22px var(--cshadow); opacity:0; transform:translateY(-8px); pointer-events:none; transition:.3s; }
+.cool-up.on { opacity:1; transform:none; }
+.cool-row { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; }
+.cool-tag { padding:3px 5px; border-radius:5px; background:var(--csoft); color:var(--caccent); font-size:10px; font-weight:700; }
+.cool-name { overflow:hidden; color:var(--cink); text-overflow:ellipsis; white-space:nowrap; }
+.cool-meta { display:flex; justify-content:space-between; margin-top:8px; color:var(--cmuted); font-size:11px; }
+.cool-hoop { position:absolute; top:163px; left:50%; width:120px; margin-left:-60px; pointer-events:none; }
+.cool-net { transform-origin:60px 52px; }
+.cool-net.wob { animation:cool-wob .6s ease-out; }
+@keyframes cool-wob { 0%{transform:scaleY(1)}25%{transform:scaleY(1.18) scaleX(.94)}55%{transform:scaleY(.94) scaleX(1.03)}100%{transform:none} }
+.cool-dot { position:absolute; width:5px; height:5px; margin:-2.5px 0 0 -2.5px; border-radius:50%; background:var(--caccent); opacity:0; pointer-events:none; }
+.cool-file { position:absolute; top:0; left:0; z-index:3; width:48px; height:60px; cursor:grab; touch-action:none; will-change:transform; }
+.cool-file::after { position:absolute; inset:-22px; content:""; }
+.cool-file img { position:absolute; inset:0; display:none; width:48px; height:60px; border:2px solid var(--cwhite); border-radius:8px; object-fit:cover; box-shadow:0 6px 14px var(--cshadow); pointer-events:none; }
+.cool-file.isimg img { display:block; }
+.cool-file.isimg svg { display:none; }
+.cool-badge { position:absolute; top:-8px; right:-8px; display:none; min-width:20px; height:20px; padding:0 5px; place-items:center; border-radius:10px; background:var(--caccent); color:#fff; font-size:11px; font-weight:700; pointer-events:none; }
+.cool-badge.on { display:grid; }
+.cool-skip { position:absolute; right:0; bottom:22px; display:none; padding:8px 12px; border:0; border-radius:999px; background:var(--csoft); color:var(--caccent); font:600 12px inherit; font-family:inherit; cursor:pointer; }
+.cool-skip.on { display:block; }
+.cool-list { display:grid; gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+.cool-list li { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; background:var(--cwhite); color:var(--cink); font-size:13px; }
+.cool-list .thumb { display:grid; width:34px; height:34px; flex:none; overflow:hidden; place-items:center; border-radius:8px; background:var(--csoft); color:var(--caccent); font-size:10px; font-weight:700; }
+.cool-list .thumb img { width:100%; height:100%; object-fit:cover; }
+.cool-list .file-meta { min-width:0; flex:1; }
+.cool-list .file-meta b { display:block; overflow:hidden; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.cool-list .file-meta span { color:var(--cmuted); font-size:11px; }
+.cool-list .file-ok { color:#2f9e6a; font-weight:700; }
+.cool-list h4 { margin:4px 2px 0; color:var(--cmuted); font-size:12px; font-weight:600; }
+.cool-file:active { cursor:grabbing; }
+.cool-file.snap { transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .25s; }
+.cool-file.sink { opacity:0; transition:transform .55s ease-in,opacity .55s ease-in; }
+.cool-file.hide { opacity:0; transition:none; }
+.cool-hint { position:absolute; right:0; bottom:0; left:0; padding:0 70px; color:var(--cmuted); font-size:12px; text-align:center; }
+.cool-zone:focus-visible,.cool-file:focus-visible,.cool-icon-btn:focus-visible,.cool-skip:focus-visible { outline:2px solid var(--caccent); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { .cool-net.wob { animation:none; } .cool-file.snap,.cool-file.sink { transition:none; } }
 
 
 /* TABLE */
@@ -901,16 +944,56 @@ tr { cursor: pointer; transition: background .15s; }
           <div style="font-size:.72rem;color:var(--t4);margin-top:5px;">แนบได้ 1-5 ไฟล์ (รวมไม่เกิน 20MB) <br>หากเป็นรูปภาพระบบจะต่อให้เป็นไฟล์เดียวอัตโนมัติ</div>
         </div>
         <div class="cool-upload" id="coolUploadPanel" style="display:none;">
-          <input type="file" id="coolFileIn" accept="image/*,.pdf" multiple hidden>
-          <button type="button" class="btn btn-o btn-sm" onclick="App.chooseCoolFiles()">📎 เลือกรูปภาพหรือ PDF</button>
-          <div style="font-size:.72rem;color:var(--t4);margin:7px 0;">ลากไฟล์ลงสนาม แล้วดึงลูกบอลลงและถอยไปทางซ้ายก่อนปล่อยโยน • สูงสุด 5 รูป หรือ PDF 1 ไฟล์ รวมไม่เกิน 20MB</div>
-          <div class="cool-stage" id="coolStage" aria-label="สนามโยนไฟล์ลงห่วง">
-            <div class="cool-hoop" aria-hidden="true"></div>
-            <div class="cool-ball" id="coolBall" role="button" tabindex="0" aria-label="โยนไฟล์ที่เลือกลงห่วง">📄</div>
+          <div class="cool-card">
+            <header class="cool-header">
+              <div>
+                <h3 class="cool-title">ส่งไฟล์</h3>
+                <p class="cool-sub">ลากไฟล์ หรือเลือกไฟล์ แล้วโยนลงห่วง</p>
+              </div>
+              <div class="cool-tools">
+                <button class="cool-icon-btn" id="coolSound" type="button" aria-label="ปิดเสียง" aria-pressed="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path id="coolWave" d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+                </button>
+                <div class="cool-count">พร้อมส่ง <b id="coolCount">0</b></div>
+              </div>
+            </header>
+            <div class="cool-stage" id="coolStage">
+              <div class="cool-zone" id="coolZone" tabindex="0" role="button" aria-label="เลือกไฟล์ หรือลากไฟล์มาวาง">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+                <strong>วางไฟล์ที่นี่</strong>
+                <small id="coolZoneSub">หรือคลิกเพื่อเลือกไฟล์</small>
+                <div class="cool-up" id="coolUp" aria-live="polite">
+                  <div class="cool-row"><span class="cool-tag" id="coolExt">PDF</span><span class="cool-name" id="coolName">document.pdf</span></div>
+                  <div class="cool-meta"><span id="coolState">เพิ่มไฟล์แล้ว</span><span id="coolSize">0 KB</span></div>
+                </div>
+              </div>
+              <input type="file" id="coolFileIn" accept="image/*,application/pdf,.pdf,.heic" multiple hidden>
+              <svg class="cool-hoop" viewBox="0 0 120 120" aria-hidden="true">
+                <rect x="32" y="0" width="56" height="42" rx="3" fill="var(--cwhite)" stroke="var(--cline)"/>
+                <rect x="47" y="14" width="26" height="22" rx="1.5" fill="none" stroke="var(--caccent)" stroke-width="2"/>
+                <g class="cool-net" id="coolNet" stroke="var(--cline)" stroke-width="1.2" fill="none">
+                  <path d="M34 54 44 112M44 54 50 112M54 54 56 112M64 54 64 112M74 54 72 112M84 54 78 112M92 54 82 112"/>
+                  <path d="M37 66q23 8 46 0M40 80q20 7 40 0M43 94q17 6 34 0"/>
+                </g>
+                <ellipse cx="60" cy="52" rx="29" ry="5" fill="none" stroke="var(--caccent)" stroke-width="3.5"/>
+              </svg>
+              <div id="coolDots" aria-hidden="true"></div>
+              <div class="cool-file" id="coolFile" role="button" tabindex="0" aria-label="ดึงไฟล์ถอยหลังแล้วปล่อยเพื่อโยน">
+                <img id="coolFileImg" alt="">
+                <span class="cool-badge" id="coolBadge"></span>
+                <svg width="48" height="60" viewBox="0 0 48 60" aria-hidden="true">
+                  <path d="M4 4h28l12 12v38a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="var(--cwhite)" stroke="var(--cline)" stroke-width="1.5"/>
+                  <path d="M32 4v12h12" fill="var(--csoft)" stroke="var(--cline)" stroke-width="1.5"/>
+                  <path d="M11 24h16M11 30h22M11 36h18" stroke="var(--cline)" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="14" y="41" width="22" height="11" rx="3" fill="var(--caccent)"/>
+                  <text id="coolFileExt" x="25" y="49.6" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">PDF</text>
+                </svg>
+              </div>
+              <button class="cool-skip" id="coolSkip" type="button">เพิ่มไฟล์โดยไม่ต้องโยน</button>
+              <div class="cool-hint" id="coolHint" aria-live="polite">ดึงไฟล์ถอยหลัง แล้วปล่อยเพื่อโยนลงห่วง</div>
+            </div>
+            <ul class="cool-list" id="coolList" aria-label="ไฟล์ที่พร้อมส่ง"></ul>
           </div>
-          <div class="cool-status" id="coolStatus" aria-live="polite">เลือกไฟล์ก่อน แล้วโยนให้ลงห่วง</div>
-          <div class="cool-file-list" id="coolFileList" aria-live="polite"></div>
-          <button type="button" class="btn btn-g btn-sm" id="coolSkip" style="display:none;margin-top:8px;" onclick="App.addCoolFilesWithoutShot()">เพิ่มไฟล์โดยไม่ต้องโยน</button>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px;">
@@ -1322,6 +1405,7 @@ function isLate(subTime, dueStr) {
 }
 
 /* MAIN APP */
+var coolGame=null;
 var App={
   go:function(id){
     if(!id)return;
@@ -1708,6 +1792,8 @@ var App={
     }
   },
   resetUploadModes:()=>{
+    App.clearCoolCard();
+    App.releaseCoolUrls();
     S.coolQueue=[];S.coolFiles=[];
     if($('fileIn'))$('fileIn').value='';
     if($('coolFileIn'))$('coolFileIn').value='';
@@ -1719,6 +1805,8 @@ var App={
     const hasFiles=$('fileIn').files.length||S.coolQueue.length||S.coolFiles.length;
     if(hasFiles&&!skipConfirm&&!window.confirm('การเปลี่ยนโหมดจะล้างไฟล์ที่เลือกไว้ ต้องการเปลี่ยนหรือไม่?'))return;
     if(hasFiles){
+      App.clearCoolCard();
+      App.releaseCoolUrls();
       $('fileIn').value='';$('coolFileIn').value='';S.coolQueue=[];S.coolFiles=[];
       App.updateCoolUploader();
     }
@@ -1731,88 +1819,234 @@ var App={
     $('generalUploadPanel').style.display=general?'block':'none';
     $('coolUploadPanel').style.display=general?'none':'block';
   },
-  chooseCoolFiles:()=>$('coolFileIn').click(),
+  clearCoolCard:()=>{
+    window.clearTimeout(App._coolCardTimer);
+    if($('coolUp'))$('coolUp').classList.remove('on');
+    if($('coolZone'))$('coolZone').classList.remove('busy');
+  },
+  releaseCoolUrls:()=>{
+    S.coolQueue.concat(S.coolFiles).forEach(item=>{
+      if(item.url){URL.revokeObjectURL(item.url);item.url='';}
+    });
+  },
   updateCoolUploader:()=>{
-    const list=$('coolFileList'),status=$('coolStatus'),ball=$('coolBall'),skip=$('coolSkip');
-    if(!list||!status||!ball||!skip)return;
+    const list=$('coolList'),count=$('coolCount'),skip=$('coolSkip');
+    if(!list||!count||!skip)return;
     list.innerHTML='';
-    S.coolFiles.forEach(file=>{
-      const item=document.createElement('div');item.className='cool-file-item';item.textContent='🏀 '+file.name+' — พร้อมส่ง';list.appendChild(item);
+    if(S.coolFiles.length){
+      const heading=document.createElement('h4');heading.textContent='ไฟล์ที่ลงห่วงแล้ว';list.appendChild(heading);
+    }
+    const fmt=size=>size>=1048576?(size/1048576).toFixed(1)+' MB':Math.max(1,Math.round(size/1024))+' KB';
+    const ext=name=>((name.split('.').pop()||'FILE').slice(0,4)).toUpperCase();
+    S.coolFiles.forEach(item=>{
+      const li=document.createElement('li'),thumb=document.createElement('div');thumb.className='thumb';
+      if(item.file.type.startsWith('image/')&&item.url){
+        const img=new Image();img.alt='';img.src=item.url;thumb.appendChild(img);
+      }else thumb.textContent=ext(item.name);
+      const info=document.createElement('div');info.className='file-meta';
+      const name=document.createElement('b');name.textContent=item.name;
+      const size=document.createElement('span');size.textContent=fmt(item.size);
+      const ok=document.createElement('span');ok.className='file-ok';ok.textContent='✓';
+      info.append(name,size);li.append(thumb,info,ok);list.appendChild(li);
     });
-    S.coolQueue.forEach(file=>{
-      const item=document.createElement('div');item.className='cool-file-item';item.textContent='⏳ '+file.name+' — รอโยน';list.appendChild(item);
-    });
-    const file=S.coolQueue[0];
-    ball.textContent=file&&file.type.startsWith('image/')?'🖼️':'📄';
-    ball.style.transform='translate(0,0)';
-    status.textContent=S.coolQueue.length
-      ?'ไฟล์รอโยน '+S.coolQueue.length+' ไฟล์ — ดึงลูกบอลลงและถอยไปทางซ้ายแล้วปล่อย'
-      :S.coolFiles.length?'ลงห่วงแล้ว '+S.coolFiles.length+' ไฟล์ — กดส่งงานเพื่ออัปโหลด':'เลือกไฟล์ก่อน แล้วโยนให้ลงห่วง';
-    skip.style.display=S.coolQueue.length?'inline-flex':'none';
+    count.textContent=S.coolFiles.length;
+    skip.classList.toggle('on',S.coolQueue.length>0);
+    if(coolGame)coolGame.refresh();
   },
   addCoolFiles:(fileList)=>{
     const incoming=Array.from(fileList||[]);
     if(!incoming.length)return;
-    const all=S.coolFiles.concat(S.coolQueue,incoming);
+    const all=S.coolFiles.concat(S.coolQueue).map(item=>item.file).concat(incoming);
     if(all.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
     if(all.some(file=>!(file.type.startsWith('image/')||file.type==='application/pdf'||/\.(pdf|heic|heif|jpe?g|png|webp|gif)$/i.test(file.name))))
       return UI.toast('โหมดคนเท่ๆ รองรับเฉพาะรูปภาพและ PDF','er');
     if(all.length>1&&all.some(file=>!file.type.startsWith('image/')))
       return UI.toast('แนบ PDF ได้ครั้งละ 1 ไฟล์ หากแนบหลายไฟล์ต้องเป็นรูปภาพทั้งหมด','er');
     if(all.reduce((sum,file)=>sum+file.size,0)>20*1024*1024)return UI.toast('ขนาดไฟล์รวมใหญ่เกิน 20MB','er');
-    S.coolQueue.push(...incoming);
+    S.coolQueue.push(...incoming.map(file=>({file,name:file.name,size:file.size,url:''})));
     App.updateCoolUploader();
   },
   addCoolFilesWithoutShot:()=>{
     S.coolFiles.push(...S.coolQueue.splice(0));
     App.updateCoolUploader();
+    const item=S.coolFiles[S.coolFiles.length-1];
+    if(item)App.showCoolReady(item);
+  },
+  showCoolReady:item=>{
+    $('coolExt').textContent=((item.name.split('.').pop()||'FILE').slice(0,4)).toUpperCase();
+    $('coolName').textContent=item.name;
+    $('coolSize').textContent=item.size>=1048576?(item.size/1048576).toFixed(1)+' MB':Math.max(1,Math.round(item.size/1024))+' KB';
+    $('coolState').textContent='พร้อมส่งงาน';
+    $('coolZone').classList.add('busy');$('coolUp').classList.add('on');
+    window.clearTimeout(App._coolCardTimer);
+    App._coolCardTimer=window.setTimeout(()=>{
+      $('coolUp').classList.remove('on');$('coolZone').classList.remove('busy');
+    },1400);
   },
   initCoolUploader:()=>{
-    const stage=$('coolStage'),ball=$('coolBall');
-    if(!stage||!ball)return;
-    let dragging=false,startX=0,startY=0,lastX=0,lastY=0,animFrame=0;
-    const point=e=>{const r=stage.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
-    const shoot=()=>{
-      if(!S.coolQueue.length)return UI.toast('เลือกไฟล์ก่อนโยนลูกบอล','wn');
-      const rect=stage.getBoundingClientRect(),hoopX=rect.width/2-25,hoopY=35;
-      const dx=hoopX-24,dy=hoopY-(rect.height-64);
-      const hit=lastX<-15&&lastY>20;
-      ball.style.transition='transform .5s cubic-bezier(.2,.8,.2,1)';
-      ball.style.transform='translate('+dx+'px,'+dy+'px) rotate(540deg)';
-      window.clearTimeout(animFrame);
-      animFrame=window.setTimeout(()=>{
-        if(hit){
-          S.coolFiles.push(S.coolQueue.shift());
-          UI.toast('ลงห่วง! เพิ่มไฟล์เข้ารายการส่งแล้ว','ok');
-        }else{
-          UI.toast('ยังไม่ลงห่วง ลองโยนอีกครั้ง','wn');
-        }
-        ball.style.transition='';
-        App.updateCoolUploader();
-      },520);
+    const stage=$('coolStage'),file=$('coolFile'),dotsEl=$('coolDots'),hint=$('coolHint'),net=$('coolNet'),zone=$('coolZone');
+    if(!stage||!file)return;
+    const G=1500,K=9,MAXPULL=105,NDOTS=14;
+    let mode='idle',soundOn=true,pos={x:0,y:0},vel={x:0,y:0},rot=0,spin=0;
+    let width=0,height=440,home={x:70,y:370},rim={x:0,y:213,r:21},last=0;
+    let dots=[];
+    for(let i=0;i<NDOTS;i++){const dot=document.createElement('i');dot.className='cool-dot';dotsEl.appendChild(dot);dots.push(dot);}
+    const say=text=>{hint.textContent=text;};
+    const place=(x,y,r,s)=>{
+      pos.x=x;pos.y=y;
+      file.style.transform='translate('+(x-24)+'px,'+(y-30)+'px) rotate('+r+'deg) scale('+(s||1)+')';
     };
-    ball.addEventListener('pointerdown',e=>{
-      if(!S.coolQueue.length)return;
-      dragging=true;const p=point(e);startX=p.x;startY=p.y;lastX=0;lastY=0;
-      ball.setPointerCapture(e.pointerId);e.preventDefault();
+    const layout=()=>{
+      width=stage.clientWidth;rim.x=width/2;home.x=Math.min(70,width*.2);
+      if(mode==='idle')place(home.x,home.y,0,1);
+    };
+    const audio=()=>{
+      if(!App._coolAudio){
+        try{App._coolAudio=new (window.AudioContext||window.webkitAudioContext)();}
+        catch(error){App._coolAudio=null;}
+      }
+      return App._coolAudio;
+    };
+    const tone=(frequency,delay,duration,type,volume)=>{
+      const context=audio();if(!context||!soundOn)return;
+      const oscillator=context.createOscillator(),gain=context.createGain();
+      oscillator.type=type||'sine';oscillator.frequency.setValueAtTime(frequency,context.currentTime+delay);
+      gain.gain.setValueAtTime(volume||.08,context.currentTime+delay);
+      gain.gain.exponentialRampToValueAtTime(.0001,context.currentTime+delay+duration);
+      oscillator.connect(gain);gain.connect(context.destination);
+      oscillator.start(context.currentTime+delay);oscillator.stop(context.currentTime+delay+duration);
+    };
+    const swish=()=>{
+      const context=audio();if(!context||!soundOn)return;
+      const length=context.sampleRate*.25,buffer=context.createBuffer(1,length,context.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length);
+      const source=context.createBufferSource(),filter=context.createBiquadFilter(),gain=context.createGain();
+      filter.type='bandpass';filter.frequency.value=3200;gain.gain.value=.12;
+      source.buffer=buffer;source.connect(filter);filter.connect(gain);gain.connect(context.destination);source.start();
+    };
+    const pointer=e=>{const rect=stage.getBoundingClientRect();return{x:e.clientX-rect.left,y:e.clientY-rect.top};};
+    const pull=point=>{
+      let dx=point.x-home.x,dy=point.y-home.y,length=Math.hypot(dx,dy);
+      if(length>MAXPULL){dx*=MAXPULL/length;dy*=MAXPULL/length;}
+      return{x:dx,y:dy};
+    };
+    const showDots=velocity=>{
+      dots.forEach((dot,index)=>{
+        const t=(index+1)*.06;
+        dot.style.left=(home.x+velocity.x*t)+'px';
+        dot.style.top=(home.y+velocity.y*t+.5*G*t*t)+'px';
+        dot.style.opacity=(1-index/NDOTS)*.85;
+      });
+    };
+    const hideDots=()=>dots.forEach(dot=>{dot.style.opacity=0;});
+    const current=()=>S.coolQueue[0];
+    const setBall=()=>{
+      const item=current(),image=item&&item.file.type.startsWith('image/');
+      if(image){
+        if(!item.url)item.url=URL.createObjectURL(item.file);
+        $('coolFileImg').onerror=()=>file.classList.remove('isimg');
+        $('coolFileImg').src=item.url;file.classList.add('isimg');
+      }else{
+        file.classList.remove('isimg');
+        $('coolFileExt').textContent=item?((item.name.split('.').pop()||'FILE').slice(0,3)).toUpperCase():'PDF';
+      }
+      const queued=S.coolQueue.length;
+      $('coolBadge').textContent=queued;
+      $('coolBadge').classList.toggle('on',queued>1);
+      say(queued?'ดึงไฟล์ถอยหลัง แล้วปล่อยเพื่อโยนลงห่วง':'เลือกไฟล์หรือวางไฟล์ลงในกรอบด้านบน');
+    };
+    const pointDown=e=>{
+      if(mode!=='idle')return;
+      if(!S.coolQueue.length){$('coolFileIn').click();return;}
+      audio();mode='drag';file.classList.remove('snap');file.setPointerCapture(e.pointerId);e.preventDefault();
+      say('ปล่อยเพื่อโยนไฟล์ลงห่วง');
+    };
+    file.addEventListener('pointerdown',pointDown);
+    file.addEventListener('pointermove',e=>{
+      if(mode!=='drag')return;
+      const p=pull(pointer(e));place(home.x+p.x,home.y+p.y,p.x*.12,1);
+      showDots({x:-p.x*K,y:-p.y*K});
     });
-    ball.addEventListener('pointermove',e=>{
-      if(!dragging)return;
-      const p=point(e);lastX=Math.max(-90,Math.min(90,p.x-startX));lastY=Math.max(-90,Math.min(90,p.y-startY));
-      ball.style.transform='translate('+lastX+'px,'+lastY+'px)';
-    });
-    const release=e=>{if(!dragging)return;dragging=false;shoot();};
-    ball.addEventListener('pointerup',release);
-    ball.addEventListener('pointercancel',release);
-    ball.addEventListener('keydown',e=>{
+    const reset=()=>{
+      file.classList.remove('sink','snap');file.classList.add('hide');mode='idle';rot=0;
+      place(home.x,home.y,0,1);void file.offsetWidth;file.classList.remove('hide');
+      say(S.coolQueue.length?'ดึงไฟล์ถอยหลัง แล้วปล่อยเพื่อโยนลงห่วง':'เลือกไฟล์หรือวางไฟล์ลงในกรอบด้านบน');
+    };
+    const miss=()=>{
+      mode='lock';say('ยังไม่ลงห่วง ลองอีกครั้ง');tone(120,0,.18,'sawtooth',.04);
+      window.setTimeout(reset,500);
+    };
+    const score=()=>{
+      mode='lock';swish();tone(660,.05,.15,'sine',.07);tone(880,.15,.25,'sine',.07);
+      file.classList.add('sink');place(rim.x,rim.y+64,rot,.35);
+      net.classList.remove('wob');void net.getBoundingClientRect();net.classList.add('wob');
+      say('ลงห่วง! เพิ่มไฟล์ในรายการพร้อมส่ง');window.setTimeout(reset,700);
+      const item=S.coolQueue.shift();if(item)S.coolFiles.push(item);
+      App.updateCoolUploader();
+      if(item)App.showCoolReady(item);
+      if(navigator.vibrate)navigator.vibrate(18);
+    };
+    const release=e=>{
+      if(mode!=='drag')return;
+      const p=pull(pointer(e)),length=Math.hypot(p.x,p.y);hideDots();
+      if(length<14){mode='idle';file.classList.add('snap');place(home.x,home.y,0,1);setBall();return;}
+      vel.x=-p.x*K;vel.y=-p.y*K;spin=vel.x*.25;mode='fly';
+      tone(220,0,.12,'triangle',.06);say('');
+    };
+    file.addEventListener('pointerup',release);
+    file.addEventListener('pointercancel',release);
+    file.addEventListener('keydown',e=>{
       if(e.key==='Enter'||e.key===' '){
-        e.preventDefault();lastX=-45;lastY=45;shoot();
+        e.preventDefault();
+        if(mode==='idle'&&S.coolQueue.length){
+          const p={x:home.x-45,y:home.y+45};vel.x=-pull(p).x*K;vel.y=-pull(p).y*K;spin=vel.x*.25;mode='fly';
+        }
       }
     });
-    stage.addEventListener('dragover',e=>{e.preventDefault();stage.classList.add('over');});
-    stage.addEventListener('dragleave',()=>stage.classList.remove('over'));
-    stage.addEventListener('drop',e=>{e.preventDefault();stage.classList.remove('over');App.addCoolFiles(e.dataTransfer.files);});
+    const tick=timestamp=>{
+      const dt=Math.min((timestamp-last)/1000||0,.033);last=timestamp;
+      if(mode==='fly'){
+        const previousY=pos.y;vel.y+=G*dt;rot+=spin*dt;
+        let x=pos.x+vel.x*dt,y=pos.y+vel.y*dt;
+        if(Math.abs(x-rim.x)<32&&y>rim.y-50&&y<rim.y-8&&Math.abs(pos.x-rim.x)>=32){
+          vel.x*=-.45;x=pos.x;tone(140,0,.1,'square',.05);
+        }
+        if(previousY<rim.y&&y>=rim.y&&vel.y>0){
+          if(Math.abs(x-rim.x)<rim.r)score();
+          else if(Math.abs(x-rim.x)<rim.r+14){
+            vel.y*=-.35;vel.x*=.6;y=rim.y-2;tone(330,0,.08,'square',.05);
+          }
+        }
+        if(mode==='fly'){
+          place(x,y,rot,1);
+          if(y>height+90||x<-90||x>width+90)miss();
+        }
+      }
+      window.requestAnimationFrame(tick);
+    };
+    const refresh=()=>{
+      setBall();
+      if(mode==='idle')place(home.x,home.y,0,1);
+    };
+    $('coolSound').addEventListener('click',function(){
+      soundOn=!soundOn;this.setAttribute('aria-pressed',String(soundOn));
+      this.setAttribute('aria-label',soundOn?'ปิดเสียง':'เปิดเสียง');
+      $('coolWave').style.display=soundOn?'':'none';
+    });
+    $('coolSkip').addEventListener('click',App.addCoolFilesWithoutShot);
+    zone.addEventListener('click',()=>$('coolFileIn').click());
+    zone.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();$('coolFileIn').click();}
+    });
     $('coolFileIn').addEventListener('change',function(){App.addCoolFiles(this.files);this.value='';});
+    ['dragenter','dragover'].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.add('over');}));
+    ['dragleave','drop'].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.remove('over');}));
+    zone.addEventListener('drop',e=>App.addCoolFiles(e.dataTransfer&&e.dataTransfer.files));
+    const touch=window.matchMedia&&window.matchMedia('(hover:none)').matches;
+    if(touch)$('coolZoneSub').textContent='แตะเพื่อเลือกรูปภาพหรือ PDF';
+    coolGame={refresh,layout};
+    window.addEventListener('resize',layout);
+    layout();refresh();window.requestAnimationFrame(tick);
   },
   invalidateAiReview:()=>{
     S.aiRequestId++;
@@ -1911,7 +2145,7 @@ var App={
     });
   },
   subWork:async()=>{
-    const link=UI.v('linkIn'),files=S.uploadMode==='cool'?S.coolFiles.slice():$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
+    const link=UI.v('linkIn'),files=S.uploadMode==='cool'?S.coolFiles.map(item=>item.file):$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
     if(S.uploadMode==='cool'&&S.coolQueue.length)return UI.toast('กรุณาโยนหรือเพิ่มไฟล์ที่เหลือก่อนส่งงาน','wn');
     if(!link&&files.length===0&&!answerImage&&!answerText)return UI.toast('กรุณาพิมพ์คำตอบ ใส่ลิงก์ หรือเลือกไฟล์งาน','wn');
     if(files.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
