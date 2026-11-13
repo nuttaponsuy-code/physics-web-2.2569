@@ -2000,7 +2000,11 @@ var App={
       if(e.key==='Enter'||e.key===' '){
         e.preventDefault();
         if(mode==='idle'&&S.coolQueue.length){
-          const p={x:home.x-45,y:home.y+45};vel.x=-pull(p).x*K;vel.y=-pull(p).y*K;spin=vel.x*.25;mode='fly';
+          const verticalPull=100,delta=home.y+verticalPull-rim.y;
+          const flightTime=(K*verticalPull+Math.sqrt((K*verticalPull)**2-2*G*delta))/G;
+          const horizontalPull=(rim.x-home.x)/(1-K*flightTime);
+          const p=pull({x:home.x+horizontalPull,y:home.y+verticalPull});
+          vel.x=-p.x*K;vel.y=-p.y*K;spin=vel.x*.25;mode='fly';tone(220,0,.12,'triangle',.06);
         }
       }
     });
