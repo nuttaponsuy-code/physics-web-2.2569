@@ -147,6 +147,20 @@ div:has(> .stab) { background: var(--in-b); border: 1px solid var(--in-bd); bord
 /* PROGRESS */
 .pw { width: 100%; background: var(--in-b); height: 7px; border-radius: var(--r-pill); overflow: hidden; margin-top: 6px; }
 .pf { height: 100%; background: linear-gradient(90deg, var(--ac), var(--cy)); border-radius: var(--r-pill); transition: width .6s var(--spring); }
+.upload-modes { display:flex; gap:8px; margin-bottom:10px; }
+.upload-mode { flex:1; padding:9px 10px; border:1px solid var(--in-bd); border-radius:var(--r-sm); background:var(--in-b); color:var(--t2); font-weight:600; cursor:pointer; }
+.upload-mode.active { border-color:var(--ac); background:var(--ac-bg); color:var(--ac); }
+.cool-upload { padding:12px; border:1px solid var(--gb); border-radius:var(--r-md); background:var(--g0); }
+.cool-stage { position:relative; height:230px; overflow:hidden; border:1.5px dashed var(--in-bd); border-radius:var(--r-sm); touch-action:none; }
+.cool-stage.over { border-color:var(--ac); background:var(--ac-bg); }
+.cool-hoop { position:absolute; left:50%; top:34px; transform:translateX(-50%); width:74px; height:64px; border:5px solid var(--ac); border-top:0; border-radius:0 0 24px 24px; opacity:.8; pointer-events:none; }
+.cool-hoop::before { content:''; position:absolute; width:86px; height:9px; left:50%; top:-7px; transform:translateX(-50%); border:3px solid var(--cy); border-radius:50%; }
+.cool-ball { position:absolute; left:24px; bottom:14px; width:50px; height:50px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#ffb340,#f36b21); color:#fff; font-size:1.25rem; box-shadow:0 5px 16px rgba(0,0,0,.28); cursor:grab; touch-action:none; user-select:none; }
+.cool-ball:active { cursor:grabbing; }
+.cool-status { min-height:1.4em; margin-top:8px; color:var(--t3); font-size:.8rem; text-align:center; }
+.cool-file-list { margin-top:8px; display:grid; gap:5px; }
+.cool-file-item { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:6px 9px; border-radius:8px; background:var(--in-b); color:var(--t2); font-size:.76rem; }
+@media (prefers-reduced-motion:reduce) { .cool-ball { transition:none !important; } }
 
 
 /* TABLE */
@@ -877,11 +891,28 @@ tr { cursor: pointer; transition: background .15s; }
       </div>
       <div class="fg"><label class="lbl">วางลิงก์งาน (Google Drive, Canva ฯลฯ)</label><input type="url" class="fc" id="linkIn" placeholder="https://..."></div>
       <div style="text-align:center;margin:10px 0;color:var(--t4);font-weight:700;font-size:.8rem;">— หรือ —</div>
-      <div class="fg"><label class="lbl">อัปโหลดไฟล์งาน</label>
-        <div style="border:1.5px dashed var(--gbs);padding:16px;text-align:center;border-radius:12px;">
+      <div class="fg"><label class="lbl">วิธีอัปโหลดไฟล์งาน</label>
+        <div class="upload-modes" role="group" aria-label="เลือกวิธีอัปโหลดไฟล์">
+          <button type="button" class="upload-mode active" id="uploadModeGeneral" aria-pressed="true" onclick="App.setUploadMode('general')">1. โหมดทั่วไป</button>
+          <button type="button" class="upload-mode" id="uploadModeCool" aria-pressed="false" onclick="App.setUploadMode('cool')">2. โหมดคนเท่ๆ</button>
+        </div>
+        <div id="generalUploadPanel" style="border:1.5px dashed var(--gbs);padding:16px;text-align:center;border-radius:12px;">
           <input type="file" class="fc" id="fileIn" multiple accept="image/*,.pdf,.doc,.docx" style="border:none;background:transparent;color:var(--t2);">
           <div style="font-size:.72rem;color:var(--t4);margin-top:5px;">แนบได้ 1-5 ไฟล์ (รวมไม่เกิน 20MB) <br>หากเป็นรูปภาพระบบจะต่อให้เป็นไฟล์เดียวอัตโนมัติ</div>
-        </div></div>
+        </div>
+        <div class="cool-upload" id="coolUploadPanel" style="display:none;">
+          <input type="file" id="coolFileIn" accept="image/*,.pdf" multiple hidden>
+          <button type="button" class="btn btn-o btn-sm" onclick="App.chooseCoolFiles()">📎 เลือกรูปภาพหรือ PDF</button>
+          <div style="font-size:.72rem;color:var(--t4);margin:7px 0;">ลากไฟล์ลงสนาม แล้วดึงลูกบอลลงและถอยไปทางซ้ายก่อนปล่อยโยน • สูงสุด 5 รูป หรือ PDF 1 ไฟล์ รวมไม่เกิน 20MB</div>
+          <div class="cool-stage" id="coolStage" aria-label="สนามโยนไฟล์ลงห่วง">
+            <div class="cool-hoop" aria-hidden="true"></div>
+            <div class="cool-ball" id="coolBall" role="button" tabindex="0" aria-label="โยนไฟล์ที่เลือกลงห่วง">📄</div>
+          </div>
+          <div class="cool-status" id="coolStatus" aria-live="polite">เลือกไฟล์ก่อน แล้วโยนให้ลงห่วง</div>
+          <div class="cool-file-list" id="coolFileList" aria-live="polite"></div>
+          <button type="button" class="btn btn-g btn-sm" id="coolSkip" style="display:none;margin-top:8px;" onclick="App.addCoolFilesWithoutShot()">เพิ่มไฟล์โดยไม่ต้องโยน</button>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;margin-top:16px;">
         <button class="btn btn-o btn-lg" style="flex:1;" onclick="App.step(4)">ยกเลิก</button>
         <button class="btn btn-p btn-lg" id="subWorkBtn" style="flex:2;" onclick="App.subWork()">ส่งงานเลย ไม่ถาม AI</button>
@@ -1139,7 +1170,8 @@ let S={
   shareQuote:null,avatarImg:null,
   msgIv:null,msgCache:[],
   impRows:[],photos:[],
-  aiReviewRequired:false,aiReviewed:false,aiRequestId:0,aiDraftImageData:''
+  aiReviewRequired:false,aiReviewed:false,aiRequestId:0,aiDraftImageData:'',
+  uploadMode:'general',coolQueue:[],coolFiles:[]
 };
 
 
@@ -1651,6 +1683,7 @@ var App={
   prepSub:async id=>{
     const a=S.asns.find(x=>x.id===id);if(!a)return;
     S.asnId=id;S.asn=a.name;UI.h('subAsnName',a.name);UI.sv('linkIn','');UI.sv('fileIn','');
+    App.resetUploadModes();
     UI.sv('subAiAnswer','');UI.sv('subAiImage','');S.aiDraftImageData='';
     S.aiReviewRequired=false;S.aiReviewed=false;S.aiRequestId++;
     UI.h('subAiFeedback','');$('subAiFeedback').style.display='none';
@@ -1673,6 +1706,113 @@ var App={
     }else{
       UI.h('subAiStatus','งานนี้ยังไม่ได้เปิดใช้ AI นักเรียนส่งงานตามปกติได้');
     }
+  },
+  resetUploadModes:()=>{
+    S.coolQueue=[];S.coolFiles=[];
+    if($('fileIn'))$('fileIn').value='';
+    if($('coolFileIn'))$('coolFileIn').value='';
+    App.updateCoolUploader();
+    App.setUploadMode('general',true);
+  },
+  setUploadMode:(mode,skipConfirm=false)=>{
+    if(mode===S.uploadMode)return;
+    const hasFiles=$('fileIn').files.length||S.coolQueue.length||S.coolFiles.length;
+    if(hasFiles&&!skipConfirm&&!window.confirm('การเปลี่ยนโหมดจะล้างไฟล์ที่เลือกไว้ ต้องการเปลี่ยนหรือไม่?'))return;
+    if(hasFiles){
+      $('fileIn').value='';$('coolFileIn').value='';S.coolQueue=[];S.coolFiles=[];
+      App.updateCoolUploader();
+    }
+    S.uploadMode=mode;
+    const general=mode==='general';
+    $('uploadModeGeneral').classList.toggle('active',general);
+    $('uploadModeGeneral').setAttribute('aria-pressed',String(general));
+    $('uploadModeCool').classList.toggle('active',!general);
+    $('uploadModeCool').setAttribute('aria-pressed',String(!general));
+    $('generalUploadPanel').style.display=general?'block':'none';
+    $('coolUploadPanel').style.display=general?'none':'block';
+  },
+  chooseCoolFiles:()=>$('coolFileIn').click(),
+  updateCoolUploader:()=>{
+    const list=$('coolFileList'),status=$('coolStatus'),ball=$('coolBall'),skip=$('coolSkip');
+    if(!list||!status||!ball||!skip)return;
+    list.innerHTML='';
+    S.coolFiles.forEach(file=>{
+      const item=document.createElement('div');item.className='cool-file-item';item.textContent='🏀 '+file.name+' — พร้อมส่ง';list.appendChild(item);
+    });
+    S.coolQueue.forEach(file=>{
+      const item=document.createElement('div');item.className='cool-file-item';item.textContent='⏳ '+file.name+' — รอโยน';list.appendChild(item);
+    });
+    const file=S.coolQueue[0];
+    ball.textContent=file&&file.type.startsWith('image/')?'🖼️':'📄';
+    ball.style.transform='translate(0,0)';
+    status.textContent=S.coolQueue.length
+      ?'ไฟล์รอโยน '+S.coolQueue.length+' ไฟล์ — ดึงลูกบอลลงและถอยไปทางซ้ายแล้วปล่อย'
+      :S.coolFiles.length?'ลงห่วงแล้ว '+S.coolFiles.length+' ไฟล์ — กดส่งงานเพื่ออัปโหลด':'เลือกไฟล์ก่อน แล้วโยนให้ลงห่วง';
+    skip.style.display=S.coolQueue.length?'inline-flex':'none';
+  },
+  addCoolFiles:(fileList)=>{
+    const incoming=Array.from(fileList||[]);
+    if(!incoming.length)return;
+    const all=S.coolFiles.concat(S.coolQueue,incoming);
+    if(all.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
+    if(all.some(file=>!(file.type.startsWith('image/')||file.type==='application/pdf'||/\.(pdf|heic|heif|jpe?g|png|webp|gif)$/i.test(file.name))))
+      return UI.toast('โหมดคนเท่ๆ รองรับเฉพาะรูปภาพและ PDF','er');
+    if(all.length>1&&all.some(file=>!file.type.startsWith('image/')))
+      return UI.toast('แนบ PDF ได้ครั้งละ 1 ไฟล์ หากแนบหลายไฟล์ต้องเป็นรูปภาพทั้งหมด','er');
+    if(all.reduce((sum,file)=>sum+file.size,0)>20*1024*1024)return UI.toast('ขนาดไฟล์รวมใหญ่เกิน 20MB','er');
+    S.coolQueue.push(...incoming);
+    App.updateCoolUploader();
+  },
+  addCoolFilesWithoutShot:()=>{
+    S.coolFiles.push(...S.coolQueue.splice(0));
+    App.updateCoolUploader();
+  },
+  initCoolUploader:()=>{
+    const stage=$('coolStage'),ball=$('coolBall');
+    if(!stage||!ball)return;
+    let dragging=false,startX=0,startY=0,lastX=0,lastY=0,animFrame=0;
+    const point=e=>{const r=stage.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+    const shoot=()=>{
+      if(!S.coolQueue.length)return UI.toast('เลือกไฟล์ก่อนโยนลูกบอล','wn');
+      const rect=stage.getBoundingClientRect(),hoopX=rect.width/2-25,hoopY=35;
+      const dx=hoopX-24,dy=hoopY-(rect.height-64);
+      const hit=lastX<-15&&lastY>20;
+      ball.style.transition='transform .5s cubic-bezier(.2,.8,.2,1)';
+      ball.style.transform='translate('+dx+'px,'+dy+'px) rotate(540deg)';
+      window.clearTimeout(animFrame);
+      animFrame=window.setTimeout(()=>{
+        if(hit){
+          S.coolFiles.push(S.coolQueue.shift());
+          UI.toast('ลงห่วง! เพิ่มไฟล์เข้ารายการส่งแล้ว','ok');
+        }else{
+          UI.toast('ยังไม่ลงห่วง ลองโยนอีกครั้ง','wn');
+        }
+        ball.style.transition='';
+        App.updateCoolUploader();
+      },520);
+    };
+    ball.addEventListener('pointerdown',e=>{
+      if(!S.coolQueue.length)return;
+      dragging=true;const p=point(e);startX=p.x;startY=p.y;lastX=0;lastY=0;
+      ball.setPointerCapture(e.pointerId);e.preventDefault();
+    });
+    ball.addEventListener('pointermove',e=>{
+      if(!dragging)return;
+      const p=point(e);lastX=Math.max(-90,Math.min(90,p.x-startX));lastY=Math.max(-90,Math.min(90,p.y-startY));
+      ball.style.transform='translate('+lastX+'px,'+lastY+'px)';
+    });
+    const release=e=>{if(!dragging)return;dragging=false;shoot();};
+    ball.addEventListener('pointerup',release);
+    ball.addEventListener('pointercancel',release);
+    ball.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();lastX=-45;lastY=45;shoot();
+      }
+    });
+    stage.addEventListener('dragover',e=>{e.preventDefault();stage.classList.add('over');});
+    stage.addEventListener('dragleave',()=>stage.classList.remove('over'));
+    stage.addEventListener('drop',e=>{e.preventDefault();stage.classList.remove('over');App.addCoolFiles(e.dataTransfer.files);});
+    $('coolFileIn').addEventListener('change',function(){App.addCoolFiles(this.files);this.value='';});
   },
   invalidateAiReview:()=>{
     S.aiRequestId++;
@@ -1771,7 +1911,8 @@ var App={
     });
   },
   subWork:async()=>{
-    const link=UI.v('linkIn'),files=$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
+    const link=UI.v('linkIn'),files=S.uploadMode==='cool'?S.coolFiles.slice():$('fileIn').files,answerImage=$('subAiImage').files[0],answerText=UI.v('subAiAnswer').trim();
+    if(S.uploadMode==='cool'&&S.coolQueue.length)return UI.toast('กรุณาโยนหรือเพิ่มไฟล์ที่เหลือก่อนส่งงาน','wn');
     if(!link&&files.length===0&&!answerImage&&!answerText)return UI.toast('กรุณาพิมพ์คำตอบ ใส่ลิงก์ หรือเลือกไฟล์งาน','wn');
     if(files.length>5)return UI.toast('เลือกไฟล์ได้ไม่เกิน 5 ไฟล์','er');
     UI.load(true);
@@ -3345,6 +3486,7 @@ function bindNav(){
 
 function bootApp(){
   try{
+    App.initCoolUploader();
     if (window.APP_CONFIG) {
       document.title = `${APP_CONFIG.schoolName} — ระบบติดตามการเรียนและส่งงาน (${APP_CONFIG.teacherName})`;
       const logo = $('navLogo'); if (logo) logo.innerHTML = `⚛️ ${APP_CONFIG.schoolName}`;
