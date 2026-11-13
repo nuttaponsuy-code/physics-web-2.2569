@@ -2004,6 +2004,7 @@ var App={
           const flightTime=(K*verticalPull+Math.sqrt((K*verticalPull)**2-2*G*delta))/G;
           const horizontalPull=(rim.x-home.x)/(1-K*flightTime);
           const p=pull({x:home.x+horizontalPull,y:home.y+verticalPull});
+          place(home.x+p.x,home.y+p.y,0,1);
           vel.x=-p.x*K;vel.y=-p.y*K;spin=vel.x*.25;mode='fly';tone(220,0,.12,'triangle',.06);
         }
       }
