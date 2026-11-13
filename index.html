@@ -1818,6 +1818,7 @@ var App={
     $('uploadModeCool').setAttribute('aria-pressed',String(!general));
     $('generalUploadPanel').style.display=general?'block':'none';
     $('coolUploadPanel').style.display=general?'none':'block';
+    if(!general&&coolGame)coolGame.layout();
   },
   clearCoolCard:()=>{
     window.clearTimeout(App._coolCardTimer);
